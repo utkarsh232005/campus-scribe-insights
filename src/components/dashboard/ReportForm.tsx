@@ -41,24 +41,59 @@ const ReportForm = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [userDepartment, setUserDepartment] = React.useState<string | null>(null);
+  const [loading, setLoading] = React.useState(false);
   
   React.useEffect(() => {
     async function getUserDepartment() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
+      try {
+        // Get the current user's auth data
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          toast({
+            title: "Authentication Error",
+            description: "You need to be logged in to submit a report",
+            variant: "destructive"
+          });
+          navigate('/login');
+          return;
+        }
+        
+        // First check if department is in the user metadata
+        if (user.user_metadata?.department) {
+          setUserDepartment(user.user_metadata.department);
+          return;
+        }
+        
+        // If not in metadata, try to get from profiles table
+        const { data: profile, error } = await supabase
           .from('profiles')
           .select('department')
           .eq('id', user.id)
           .single();
         
-        if (profile) {
-          setUserDepartment(profile.department);
+        if (error) {
+          console.error("Error fetching user profile:", error);
+          return;
         }
+        
+        if (profile && profile.department) {
+          setUserDepartment(profile.department);
+        } else {
+          // If department still not found, show warning
+          toast({
+            title: "Department Not Found",
+            description: "Your department info is missing. Please contact an administrator.",
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
       }
     }
+    
     getUserDepartment();
-  }, []);
+  }, [toast, navigate]);
   
   const form = useForm<ReportFormValues>({
     resolver: zodResolver(reportSchema),
@@ -75,44 +110,78 @@ const ReportForm = () => {
 
   async function onSubmit(data: ReportFormValues) {
     try {
+      setLoading(true);
+      
+      // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       
-      if (!user || !userDepartment) {
+      if (!user) {
         throw new Error("You must be logged in to submit a report");
       }
+      
+      if (!userDepartment) {
+        throw new Error("Department information is missing. Please contact an administrator.");
+      }
+      
+      // Use the original department value for database storage
+      // This is important for RLS policies and consistency
+      console.log("Submitting report with user_id:", user.id, "department:", userDepartment);
+      
+      // Insert report with the original department value (not formatted)
+      const { data: report, error } = await supabase
+        .from('reports')
+        .insert({
+          title: data.title,
+          department: userDepartment, // Use original department value (e.g., "computer_science")
+          academic_year: data.academicYear,
+          publication_count: parseInt(data.publicationCount),
+          conference_count: parseInt(data.conferenceCount),
+          project_count: parseInt(data.projectCount),
+          funding_amount: parseFloat(data.fundingAmount),
+          achievements: data.achievements,
+          user_id: user.id,
+          status: 'pending'
+        });
 
-      const { error } = await supabase.from('reports').insert({
-        title: data.title,
-        department: userDepartment,
-        academic_year: data.academicYear,
-        publication_count: parseInt(data.publicationCount),
-        conference_count: parseInt(data.conferenceCount),
-        project_count: parseInt(data.projectCount),
-        funding_amount: parseFloat(data.fundingAmount),
-        achievements: data.achievements,
-        user_id: user.id,
-      });
-
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase error details:", error);
+        throw new Error(`Failed to submit report: ${error.message}`);
+      }
 
       toast({
         title: "Success",
         description: "Your report has been submitted successfully",
       });
 
-      navigate('/reports');
+      // Navigate to reports page after successful submission
+      setTimeout(() => {
+        navigate('/reports');
+      }, 1500);
     } catch (error: any) {
       toast({
         title: "Error",
         description: error.message,
         variant: "destructive",
       });
+      console.error("Error submitting report:", error);
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-xl font-bold mb-6">Annual Report Submission</h2>
+      
+      {userDepartment && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+          <p className="text-sm text-blue-600">
+            You are submitting this report as a member of the <strong>
+              {userDepartment.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+            </strong> department.
+          </p>
+        </div>
+      )}
       
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -236,7 +305,9 @@ const ReportForm = () => {
           
           <div className="flex justify-end space-x-4">
             <Button variant="outline" type="button">Save Draft</Button>
-            <Button type="submit">Submit Report</Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Submitting...' : 'Submit Report'}
+            </Button>
           </div>
         </form>
       </Form>

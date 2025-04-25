@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import {
   Card,
@@ -20,119 +19,139 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Eye, Download, BarChart3, FileText, BookOpen, DollarSign } from 'lucide-react';
 import ReportChart from '@/components/dashboard/ReportChart';
+import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
+
+// Type definition for report data
+interface Report {
+  id: string;
+  title: string;
+  department: string;
+  user_id: string;
+  created_at: string;
+  status: string;
+  publication_count: number;
+  conference_count: number;
+  project_count: number;
+  funding_amount: number;
+  submitter_name?: string;
+}
 
 const Reports = () => {
-  // Mock data for reports
-  const reports = [
-    {
-      id: "REP-2024-001",
-      title: "Computer Science Department Annual Report",
-      department: "Computer Science",
-      submittedBy: "Dr. Alan Turing",
-      submittedOn: "2024-04-15",
-      status: "approved",
-      publications: 45,
-      conferences: 12,
-      projects: 8,
-      funding: 250000
-    },
-    {
-      id: "REP-2024-002",
-      title: "Electrical Engineering Department Annual Report",
-      department: "Electrical Engineering",
-      submittedBy: "Dr. Nikola Tesla",
-      submittedOn: "2024-04-12",
-      status: "pending",
-      publications: 38,
-      conferences: 15,
-      projects: 10,
-      funding: 320000
-    },
-    {
-      id: "REP-2024-003",
-      title: "Physics Department Annual Report",
-      department: "Physics",
-      submittedBy: "Dr. Richard Feynman",
-      submittedOn: "2024-04-10",
-      status: "approved",
-      publications: 52,
-      conferences: 18,
-      projects: 5,
-      funding: 180000
-    },
-    {
-      id: "REP-2024-004",
-      title: "Mathematics Department Annual Report",
-      department: "Mathematics",
-      submittedBy: "Dr. John Nash",
-      submittedOn: "2024-04-08",
-      status: "rejected",
-      publications: 28,
-      conferences: 6,
-      projects: 3,
-      funding: 90000
-    },
-    {
-      id: "REP-2024-005",
-      title: "Mechanical Engineering Department Annual Report",
-      department: "Mechanical Engineering",
-      submittedBy: "Dr. Robert Brown",
-      submittedOn: "2024-04-05",
-      status: "approved",
-      publications: 32,
-      conferences: 9,
-      projects: 7,
-      funding: 210000
-    },
-  ];
+  const [reports, setReports] = useState<Report[]>([]);
+  const [userDepartment, setUserDepartment] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [statistics, setStatistics] = useState({
+    totalReports: 0,
+    totalPublications: 0,
+    totalProjects: 0,
+    totalFunding: 0
+  });
+  const [departmentData, setDepartmentData] = useState<any[]>([]);
+  const [yearlyData, setYearlyData] = useState<any[]>([]);
 
-  // Data for department performance chart
-  const departmentData = [
-    { 
-      name: "CS", 
-      publications: 45, 
-      conferences: 12, 
-      projects: 8, 
-      funding: 25 
-    },
-    { 
-      name: "EE", 
-      publications: 38, 
-      conferences: 15, 
-      projects: 10, 
-      funding: 32 
-    },
-    { 
-      name: "PHYS", 
-      publications: 52, 
-      conferences: 18, 
-      projects: 5, 
-      funding: 18 
-    },
-    { 
-      name: "MATH", 
-      publications: 28, 
-      conferences: 6, 
-      projects: 3, 
-      funding: 9 
-    },
-    { 
-      name: "MECH", 
-      publications: 32, 
-      conferences: 9, 
-      projects: 7, 
-      funding: 21 
-    },
-  ];
+  // Fetch reports and user data
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true);
+        
+        // Get current user and their department
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: userData } = await supabase
+            .from('profiles')
+            .select('department')
+            .eq('id', user.id)
+            .single();
+          
+          if (userData) {
+            setUserDepartment(userData.department);
+          }
+        }
+        
+        // Fetch all reports
+        const { data: reportsData, error } = await supabase
+          .from('reports')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        // For each report, get the submitter's name
+        if (reportsData) {
+          const reportsWithSubmitters = await Promise.all(
+            reportsData.map(async (report) => {
+              const { data: userData, error: userError } = await supabase
+                .from('profiles')
+                .select('full_name')
+                .eq('id', report.user_id)
+                .single();
+              
+              // Check for error or missing data before accessing name
+              const submitterName = (userError || !userData) 
+                ? 'Unknown' 
+                : userData || 'Unknown';
 
-  // Data for yearly comparison chart
-  const yearlyData = [
-    { name: "2019", publications: 120, conferences: 45, projects: 18, funding: 65 },
-    { name: "2020", publications: 135, conferences: 40, projects: 20, funding: 75 },
-    { name: "2021", publications: 115, conferences: 38, projects: 25, funding: 80 },
-    { name: "2022", publications: 160, conferences: 50, projects: 30, funding: 95 },
-    { name: "2023", publications: 195, conferences: 60, projects: 33, funding: 105 },
-  ];
+              return {
+                ...report,
+                submitter_name: submitterName,
+              };
+            })
+          );
+          
+          setReports(reportsWithSubmitters);
+          
+          // Calculate statistics
+          const stats = {
+            totalReports: reportsWithSubmitters.length,
+            totalPublications: reportsWithSubmitters.reduce((sum, r) => sum + (r.publication_count || 0), 0),
+            totalProjects: reportsWithSubmitters.reduce((sum, r) => sum + (r.project_count || 0), 0),
+            totalFunding: reportsWithSubmitters.reduce((sum, r) => sum + (r.funding_amount || 0), 0)
+          };
+          setStatistics(stats);
+          
+          // Prepare data for department chart
+          const depData = Object.entries(
+            reportsWithSubmitters.reduce((acc, report) => {
+              const dept = report.department || 'Unknown';
+              if (!acc[dept]) {
+                acc[dept] = {
+                  name: dept.substring(0, 4).toUpperCase(),
+                  publications: 0,
+                  conferences: 0,
+                  projects: 0,
+                  funding: 0
+                };
+              }
+              acc[dept].publications += report.publication_count || 0;
+              acc[dept].conferences += report.conference_count || 0;
+              acc[dept].projects += report.project_count || 0;
+              acc[dept].funding += Math.round((report.funding_amount || 0) / 10000); // Convert to 10K units
+              return acc;
+            }, {} as Record<string, any>)
+          ).map(([_, value]) => value);
+          
+          setDepartmentData(depData);
+          
+          // For now, use mock data for yearly chart since we don't have historical data
+          setYearlyData([
+            { name: "2019", publications: 120, conferences: 45, projects: 18, funding: 65 },
+            { name: "2020", publications: 135, conferences: 40, projects: 20, funding: 75 },
+            { name: "2021", publications: 115, conferences: 38, projects: 25, funding: 80 },
+            { name: "2022", publications: 160, conferences: 50, projects: 30, funding: 95 },
+            { name: "2023", publications: 195, conferences: 60, projects: 33, funding: 105 },
+          ]);
+        }
+      } catch (error) {
+        console.error('Error fetching reports:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchData();
+  }, []);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -143,9 +162,23 @@ const Reports = () => {
       case 'rejected':
         return <Badge className="bg-red-500">Rejected</Badge>;
       default:
-        return <Badge>Unknown</Badge>;
+        return <Badge className="bg-yellow-500">Pending</Badge>;
     }
   };
+
+  // Format department name for display (e.g., "computer_science" -> "Computer Science")
+  const formatDepartmentName = (department: string) => {
+    if (!department) return 'Unknown';
+    return department
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  // Filter reports by department if user is not an admin
+  const filteredReports = userDepartment === 'admin' 
+    ? reports 
+    : reports.filter(report => report.department === userDepartment);
 
   return (
     <DashboardLayout>
@@ -167,8 +200,8 @@ const Reports = () => {
             <FileText className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">152</div>
-            <p className="text-xs text-gray-500">+12% from last year</p>
+            <div className="text-2xl font-bold">{statistics.totalReports}</div>
+            <p className="text-xs text-gray-500">Latest count as of today</p>
           </CardContent>
         </Card>
         <Card>
@@ -177,8 +210,8 @@ const Reports = () => {
             <BookOpen className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">520</div>
-            <p className="text-xs text-gray-500">+8% from last year</p>
+            <div className="text-2xl font-bold">{statistics.totalPublications}</div>
+            <p className="text-xs text-gray-500">Total across all departments</p>
           </CardContent>
         </Card>
         <Card>
@@ -187,8 +220,8 @@ const Reports = () => {
             <BarChart3 className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">85</div>
-            <p className="text-xs text-gray-500">+15% from last year</p>
+            <div className="text-2xl font-bold">{statistics.totalProjects}</div>
+            <p className="text-xs text-gray-500">Total across all departments</p>
           </CardContent>
         </Card>
         <Card>
@@ -197,8 +230,8 @@ const Reports = () => {
             <DollarSign className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$2.5M</div>
-            <p className="text-xs text-gray-500">+22% from last year</p>
+            <div className="text-2xl font-bold">${(statistics.totalFunding / 1000000).toFixed(1)}M</div>
+            <p className="text-xs text-gray-500">Total across all departments</p>
           </CardContent>
         </Card>
       </div>
@@ -226,47 +259,61 @@ const Reports = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Recent Reports</CardTitle>
+          <CardTitle>{userDepartment !== 'admin' ? `${userDepartment} Department Reports` : 'All Department Reports'}</CardTitle>
           <CardDescription>
-            View and manage all submitted annual reports
+            View and manage {userDepartment !== 'admin' ? 'your department\'s' : 'all'} submitted annual reports
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Submitted By</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {reports.map((report) => (
-                <TableRow key={report.id}>
-                  <TableCell className="font-medium">{report.id}</TableCell>
-                  <TableCell>{report.title}</TableCell>
-                  <TableCell>{report.department}</TableCell>
-                  <TableCell>{report.submittedBy}</TableCell>
-                  <TableCell>{report.submittedOn}</TableCell>
-                  <TableCell>{getStatusBadge(report.status)}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end space-x-2">
-                      <Button variant="ghost" size="icon">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon">
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+          {loading ? (
+            <div className="flex justify-center p-4">
+              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-blue-500"></div>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Department</TableHead>
+                  <TableHead>Submitted By</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredReports.length > 0 ? (
+                  filteredReports.map((report) => (
+                    <TableRow key={report.id}>
+                      <TableCell className="font-medium">{report.id.substring(0, 8)}</TableCell>
+                      <TableCell>{report.title}</TableCell>
+                      <TableCell>{formatDepartmentName(report.department)}</TableCell>
+                      <TableCell>{report.submitter_name}</TableCell>
+                      <TableCell>{format(new Date(report.created_at), 'yyyy-MM-dd')}</TableCell>
+                      <TableCell>{getStatusBadge(report.status || 'pending')}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end space-x-2">
+                          <Button variant="ghost" size="icon">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon">
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-4">
+                      No reports found for {userDepartment} department.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </DashboardLayout>

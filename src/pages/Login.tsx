@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -69,14 +68,24 @@ const Login = () => {
           description: "Please check your email to verify your account",
         });
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data: authData, error } = await supabase.auth.signInWithPassword({
           email: data.email,
           password: data.password,
         });
         
         if (error) throw error;
         
-        navigate('/');
+        // Display success toast notification
+        toast({
+          title: "Login successful",
+          description: `Welcome back, ${authData.user?.email}`,
+          variant: "default",
+        });
+        
+        // Add delay before redirecting to give toast time to display
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1500);
       }
     } catch (error: any) {
       toast({
