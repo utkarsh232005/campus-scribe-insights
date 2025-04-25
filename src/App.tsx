@@ -8,6 +8,9 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Reports from "./pages/Reports";
 import ReportSubmission from "./pages/ReportSubmission";
+import Calendar from "./pages/Calendar";
+import Analytics from "./pages/Analytics";
+import Departments from "./pages/Departments";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,7 +26,9 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/submit-report" element={<ReportSubmission />} />
-          {/* Add other routes here */}
+          <Route path="/calendar" element={<Calendar />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/departments" element={<Departments />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

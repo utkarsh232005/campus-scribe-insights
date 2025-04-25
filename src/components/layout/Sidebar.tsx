@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from "@/lib/utils";
 import { 
@@ -18,7 +17,7 @@ import {
 
 const Sidebar = () => {
   const location = useLocation();
-  const [collapsed, setCollapsed] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   const menuItems = [
     {
@@ -78,34 +77,29 @@ const Sidebar = () => {
   ];
 
   return (
-    <div className={cn(
-      "h-screen bg-white shadow-md flex flex-col transition-all duration-300 border-r relative",
-      collapsed ? "w-20" : "w-64"
-    )}>
-      <div className="p-4 flex items-center justify-between border-b">
-        <Link to="/" className={cn(
-          "flex items-center",
-          collapsed ? "justify-center" : "justify-start"
-        )}>
-          <School className="text-college-blue h-8 w-8" />
-          {!collapsed && (
-            <span className="ml-2 text-xl font-bold text-college-blue">COLLEGE REPORT</span>
+    <div 
+      className={cn(
+        "h-screen bg-gray-900 shadow-lg flex flex-col transition-all duration-300 border-r border-gray-800 relative",
+        isHovered ? "w-64" : "w-20"
+      )}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className={cn(
+        "p-4 flex items-center justify-between border-b border-gray-800",
+        isHovered ? "justify-between" : "justify-center"
+      )}>
+        <Link to="/" className="flex items-center">
+          <School className="text-blue-500 h-8 w-8" />
+          {isHovered && (
+            <span className="ml-2 text-xl font-bold text-white">COLLEGE REPORT</span>
           )}
         </Link>
-        <button 
-          onClick={() => setCollapsed(!collapsed)}
-          className="p-1 rounded-full hover:bg-gray-100 focus:outline-none"
-        >
-          <ChevronRight className={cn(
-            "h-5 w-5 text-gray-500 transition-transform",
-            collapsed ? "rotate-180" : ""
-          )} />
-        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto">
         <div className="px-4 py-2">
-          {!collapsed && <p className="text-xs font-semibold text-gray-400 mb-2">MAIN MENU</p>}
+          {isHovered && <p className="text-xs font-semibold text-gray-500 mb-2">MAIN MENU</p>}
           <nav>
             <ul>
               {menuItems.map((item, index) => (
@@ -114,17 +108,17 @@ const Sidebar = () => {
                     to={item.path}
                     className={cn(
                       "flex items-center py-3 px-3 rounded-md transition-colors",
-                      collapsed ? "justify-center" : "justify-start",
+                      isHovered ? "justify-start" : "justify-center",
                       item.active 
-                        ? "bg-college-blue text-white" 
-                        : "text-gray-700 hover:bg-college-lightblue hover:text-college-blue"
+                        ? "bg-blue-600 text-white" 
+                        : "text-gray-400 hover:bg-gray-800 hover:text-white"
                     )}
                   >
                     <item.icon className={cn(
                       "h-5 w-5",
-                      collapsed ? "mr-0" : "mr-3"
+                      isHovered ? "mr-3" : "mr-0"
                     )} />
-                    {!collapsed && <span>{item.title}</span>}
+                    {isHovered && <span>{item.title}</span>}
                   </Link>
                 </li>
               ))}
@@ -133,19 +127,19 @@ const Sidebar = () => {
         </div>
       </div>
 
-      <div className="p-4 border-t">
+      <div className="p-4 border-t border-gray-800">
         <Link
           to="/logout"
           className={cn(
-            "flex items-center py-2 px-3 rounded-md text-red-500 hover:bg-red-50 transition-colors",
-            collapsed ? "justify-center" : "justify-start"
+            "flex items-center py-2 px-3 rounded-md text-red-500 hover:bg-gray-800 transition-colors",
+            isHovered ? "justify-start" : "justify-center"
           )}
         >
           <LogOut className={cn(
             "h-5 w-5",
-            collapsed ? "mr-0" : "mr-3"
+            isHovered ? "mr-3" : "mr-0"
           )} />
-          {!collapsed && <span>Logout</span>}
+          {isHovered && <span>Logout</span>}
         </Link>
       </div>
     </div>

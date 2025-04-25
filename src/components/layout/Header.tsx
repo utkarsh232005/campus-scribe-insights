@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Bell, Settings } from 'lucide-react';
@@ -23,7 +22,7 @@ interface HeaderProps {
 
 const Header = ({ user }: HeaderProps) => {
   return (
-    <header className="h-16 bg-gray-800 border-b border-gray-700 flex items-center justify-end px-6">
+    <header className="h-16 bg-gray-900 border-b border-gray-800 flex items-center justify-end px-6">
       <div className="flex items-center space-x-4">
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5 text-gray-300" />
