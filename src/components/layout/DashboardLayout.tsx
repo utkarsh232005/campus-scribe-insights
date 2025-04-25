@@ -15,16 +15,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-900">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header user={user} />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-900 p-6">
           {children}
         </main>
-        <footer className="bg-white py-4 px-6 border-t text-center">
-          <p className="text-sm text-gray-500">COPYRIGHT © {new Date().getFullYear()}</p>
-        </footer>
       </div>
     </div>
   );
