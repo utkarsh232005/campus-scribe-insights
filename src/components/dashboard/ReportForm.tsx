@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,11 +21,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 const reportSchema = z.object({
   title: z.string().min(5, { message: "Report title must be at least 5 characters" }),
-  department: z.string().min(1, { message: "Please select a department" }),
   academicYear: z.string().min(1, { message: "Please select an academic year" }),
   publicationCount: z.string().min(1, { message: "Please enter number of publications" }),
   conferenceCount: z.string().min(1, { message: "Please enter number of conferences" }),
@@ -39,12 +39,31 @@ type ReportFormValues = z.infer<typeof reportSchema>;
 
 const ReportForm = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const [userDepartment, setUserDepartment] = React.useState<string | null>(null);
+  
+  React.useEffect(() => {
+    async function getUserDepartment() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('department')
+          .eq('id', user.id)
+          .single();
+        
+        if (profile) {
+          setUserDepartment(profile.department);
+        }
+      }
+    }
+    getUserDepartment();
+  }, []);
   
   const form = useForm<ReportFormValues>({
     resolver: zodResolver(reportSchema),
     defaultValues: {
       title: "",
-      department: "",
       academicYear: "",
       publicationCount: "",
       conferenceCount: "",
@@ -54,12 +73,41 @@ const ReportForm = () => {
     },
   });
 
-  function onSubmit(data: ReportFormValues) {
-    console.log(data);
-    toast({
-      title: "Report submitted successfully",
-      description: "Your annual report has been submitted for review.",
-    });
+  async function onSubmit(data: ReportFormValues) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user || !userDepartment) {
+        throw new Error("You must be logged in to submit a report");
+      }
+
+      const { error } = await supabase.from('reports').insert({
+        title: data.title,
+        department: userDepartment,
+        academic_year: data.academicYear,
+        publication_count: parseInt(data.publicationCount),
+        conference_count: parseInt(data.conferenceCount),
+        project_count: parseInt(data.projectCount),
+        funding_amount: parseFloat(data.fundingAmount),
+        achievements: data.achievements,
+        user_id: user.id,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Your report has been submitted successfully",
+      });
+
+      navigate('/reports');
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   }
 
   return (
@@ -83,32 +131,6 @@ const ReportForm = () => {
           />
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField
-              control={form.control}
-              name="department"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Department</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select department" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="computer_science">Computer Science</SelectItem>
-                      <SelectItem value="electrical_engineering">Electrical Engineering</SelectItem>
-                      <SelectItem value="mechanical_engineering">Mechanical Engineering</SelectItem>
-                      <SelectItem value="civil_engineering">Civil Engineering</SelectItem>
-                      <SelectItem value="physics">Physics</SelectItem>
-                      <SelectItem value="mathematics">Mathematics</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
             <FormField
               control={form.control}
               name="academicYear"
