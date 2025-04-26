@@ -1,15 +1,6 @@
-
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 interface FacultyMember {
   id: string;
   name: string;
@@ -18,16 +9,16 @@ interface FacultyMember {
   percentile: string;
   year: number;
 }
-
 interface StarFacultyProps {
   title: string;
   faculty: FacultyMember[];
 }
-
-const StarFaculty = ({ title, faculty }: StarFacultyProps) => {
-  return (
-    <div className="bg-white rounded-lg shadow">
-      <div className="px-6 py-4 border-b flex justify-between items-center">
+const StarFaculty = ({
+  title,
+  faculty
+}: StarFacultyProps) => {
+  return <div className="bg-white rounded-lg shadow">
+      <div className="px-6 py-4 border-b flex justify-between items-center bg-transparent">
         <h3 className="text-lg font-medium">{title}</h3>
       </div>
       
@@ -43,8 +34,7 @@ const StarFaculty = ({ title, faculty }: StarFacultyProps) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {faculty.map((member) => (
-              <TableRow key={member.id}>
+            {faculty.map(member => <TableRow key={member.id}>
                 <TableCell className="font-medium">{member.id}</TableCell>
                 <TableCell>
                   <div className="flex items-center">
@@ -58,13 +48,10 @@ const StarFaculty = ({ title, faculty }: StarFacultyProps) => {
                 <TableCell className="text-right">{member.publications}</TableCell>
                 <TableCell className="text-right">{member.percentile}</TableCell>
                 <TableCell className="text-right">{member.year}</TableCell>
-              </TableRow>
-            ))}
+              </TableRow>)}
           </TableBody>
         </Table>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default StarFaculty;
