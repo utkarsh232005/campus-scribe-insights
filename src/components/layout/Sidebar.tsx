@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from "@/lib/utils";
 import { 
@@ -8,11 +8,9 @@ import {
   Users, 
   Settings, 
   Home, 
-  ChevronRight,
-  LogOut,
-  PieChart,
   Award,
-  School
+  School,
+  PieChart 
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -51,16 +49,16 @@ const Sidebar = () => {
       active: location.pathname === '/faculty',
     },
     {
-      title: 'Departments',
-      icon: School,
-      path: '/departments',
-      active: location.pathname === '/departments',
-    },
-    {
       title: 'Awards',
       icon: Award,
       path: '/awards',
       active: location.pathname === '/awards',
+    },
+    {
+      title: 'Departments',
+      icon: School,
+      path: '/departments',
+      active: location.pathname === '/departments',
     },
     {
       title: 'Analytics',

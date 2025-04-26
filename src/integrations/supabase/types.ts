@@ -9,6 +9,78 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      awards: {
+        Row: {
+          award_type: string
+          created_at: string
+          department: string
+          description: string | null
+          id: string
+          recipient: string
+          title: string
+          year: number
+        }
+        Insert: {
+          award_type: string
+          created_at?: string
+          department: string
+          description?: string | null
+          id?: string
+          recipient: string
+          title: string
+          year: number
+        }
+        Update: {
+          award_type?: string
+          created_at?: string
+          department?: string
+          description?: string | null
+          id?: string
+          recipient?: string
+          title?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      faculty: {
+        Row: {
+          bio: string | null
+          created_at: string
+          department: string
+          email: string | null
+          id: string
+          name: string
+          photo_url: string | null
+          position: string
+          publications: number | null
+          research_interests: string[] | null
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string
+          department: string
+          email?: string | null
+          id?: string
+          name: string
+          photo_url?: string | null
+          position: string
+          publications?: number | null
+          research_interests?: string[] | null
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string
+          department?: string
+          email?: string | null
+          id?: string
+          name?: string
+          photo_url?: string | null
+          position?: string
+          publications?: number | null
+          research_interests?: string[] | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
