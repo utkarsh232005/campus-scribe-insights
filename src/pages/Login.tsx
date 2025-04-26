@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -28,8 +28,7 @@ import { useToast } from '@/components/ui/use-toast';
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid college email address" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
-  department: z.string().min(1, { message: "Please select your department" }),
-  isSignUp: z.boolean().default(false),
+  department: z.string().optional(),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -37,21 +36,37 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isSignUp, setIsSignUp] = React.useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
       password: "",
-      department: "",
-      isSignUp: false,
+      department: isSignUp ? "" : undefined,
     },
   });
 
+  // Update form when isSignUp changes
+  React.useEffect(() => {
+    form.setValue('department', isSignUp ? "" : undefined);
+  }, [isSignUp, form]);
+
   async function onSubmit(data: LoginFormValues) {
+    setIsLoading(true);
     try {
       if (isSignUp) {
+        if (!data.department) {
+          toast({
+            title: "Department required",
+            description: "Please select your department for registration",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+
         const { error } = await supabase.auth.signUp({
           email: data.email,
           password: data.password,
@@ -69,6 +84,7 @@ const Login = () => {
           description: "Please check your email to verify your account",
         });
       } else {
+        console.log("Attempting login with:", { email: data.email });
         const { data: authData, error } = await supabase.auth.signInWithPassword({
           email: data.email,
           password: data.password,
@@ -76,22 +92,28 @@ const Login = () => {
         
         if (error) throw error;
         
+        console.log("Login successful:", authData);
+        
         toast({
           title: "Login successful",
           description: `Welcome back to the Annual Report Portal`,
           variant: "default",
         });
         
+        // Wait a bit before redirecting to ensure toast is shown
         setTimeout(() => {
           navigate('/dashboard');
         }, 1500);
       }
     } catch (error: any) {
+      console.error("Auth error:", error);
       toast({
         title: "Error",
         description: error.message,
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -186,8 +208,19 @@ const Login = () => {
                 </Button>
               </div>
 
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
-                {isSignUp ? 'Create Account' : 'Sign in'}
+              <Button 
+                type="submit" 
+                className="w-full bg-blue-600 hover:bg-blue-700"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-t-transparent border-white"></span>
+                    {isSignUp ? 'Creating Account...' : 'Signing in...'}
+                  </>
+                ) : (
+                  isSignUp ? 'Create Account' : 'Sign in'
+                )}
               </Button>
             </form>
           </Form>
