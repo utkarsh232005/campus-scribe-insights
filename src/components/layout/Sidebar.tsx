@@ -12,11 +12,15 @@ import {
   Award,
   School,
   PieChart,
-  LogOut
+  LogOut,
+  Shield,
+  UserCog
 } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 const Sidebar = () => {
   const location = useLocation();
+  const { user, isAdmin } = useAuth();
   const [isHovered, setIsHovered] = useState(false);
 
   const menuItems = [
@@ -68,13 +72,28 @@ const Sidebar = () => {
       path: '/analytics',
       active: location.pathname === '/analytics',
     },
+  ];
+  
+  // Admin only menu items
+  const adminMenuItems = [
     {
-      title: 'Settings',
-      icon: Settings,
-      path: '/settings',
-      active: location.pathname === '/settings',
+      title: 'Admin Dashboard',
+      icon: Shield,
+      path: '/admin',
+      active: location.pathname === '/admin',
+    },
+    {
+      title: 'User Management',
+      icon: UserCog,
+      path: '/admin/users',
+      active: location.pathname === '/admin/users',
     }
   ];
+
+  // Determine which menu items to show based on user role
+  const displayMenuItems = isAdmin 
+    ? [...menuItems, ...adminMenuItems] 
+    : menuItems;
 
   return (
     <div 
@@ -102,7 +121,7 @@ const Sidebar = () => {
           {isHovered && <p className="text-xs font-semibold text-gray-500 mb-2">MAIN MENU</p>}
           <nav>
             <ul>
-              {menuItems.map((item, index) => (
+              {displayMenuItems.map((item, index) => (
                 <li key={index} className="mb-1">
                   <Link
                     to={item.path}

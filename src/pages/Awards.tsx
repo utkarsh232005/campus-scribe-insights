@@ -120,7 +120,8 @@ const AwardsPage = () => {
         )}
       </div>
       
-      <style jsx global>{`
+      <style>
+        {`
         @keyframes slideIn {
           from {
             opacity: 0;
@@ -140,7 +141,8 @@ const AwardsPage = () => {
           from { opacity: 0; }
           to { opacity: 1; }
         }
-      `}</style>
+        `}
+      </style>
     </DashboardLayout>
   );
 };
