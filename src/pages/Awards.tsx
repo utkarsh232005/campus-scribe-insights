@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Award } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { motion } from 'framer-motion';
 
 interface AwardItem {
   id: string;
@@ -62,10 +61,9 @@ const Awards = () => {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {awards.map((award) => (
-              <motion.div
+              <div
                 key={award.id}
-                whileHover={{ scale: 1.05 }}
-                transition={{ duration: 0.3 }}
+                className="transform transition-transform duration-300 hover:scale-105"
               >
                 <Card className={`${DepartmentColors[department]} overflow-hidden`}>
                   <CardHeader className="flex flex-row items-center space-x-4 pb-2">
@@ -83,7 +81,7 @@ const Awards = () => {
                     </span>
                   </CardContent>
                 </Card>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>

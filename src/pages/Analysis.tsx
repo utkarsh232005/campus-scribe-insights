@@ -14,14 +14,17 @@ const Analysis = () => {
     const fetchDepartments = async () => {
       const { data: facultyData, error: facultyError } = await supabase
         .from('faculty')
-        .select('department', { distinct: true });
+        .select('department')
+        .order('department');
 
       if (facultyError) {
         console.error('Error fetching departments:', facultyError);
         return;
       }
 
-      setDepartments(facultyData.map(item => item.department));
+      // Get unique departments
+      const uniqueDepartments = [...new Set(facultyData.map(item => item.department))];
+      setDepartments(uniqueDepartments);
     };
 
     fetchDepartments();

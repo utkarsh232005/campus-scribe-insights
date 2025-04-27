@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from "@/lib/utils";
@@ -10,7 +11,8 @@ import {
   Home, 
   Award,
   School,
-  PieChart 
+  PieChart,
+  LogOut
 } from 'lucide-react';
 
 const Sidebar = () => {
