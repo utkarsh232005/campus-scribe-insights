@@ -43,12 +43,20 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
   }, [toast]);
 
   const addNotification = async (notification: Omit<Notification, 'id' | 'created_at'>) => {
-    await supabase.from('notifications').insert([
-      {
-        ...notification,
-        created_at: new Date().toISOString(),
-      }
-    ]);
+    const { data, error } = await supabase
+      .from('notifications')
+      .insert([
+        {
+          ...notification,
+          created_at: new Date().toISOString(),
+        }
+      ]);
+
+    if (error) {
+      console.error('Error adding notification:', error);
+    }
+
+    return data;
   };
 
   return (

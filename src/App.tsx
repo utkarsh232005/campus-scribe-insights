@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -23,6 +22,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import UserManagement from "./pages/admin/UserManagement";
 import PrivateRoute from "./components/auth/PrivateRoute";
 import AdminRoute from "./components/auth/AdminRoute";
+import Profile from "./pages/Profile";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +49,7 @@ const AppWithProviders = () => (
               <Route path="/faculty" element={<PrivateRoute><Faculty /></PrivateRoute>} />
               <Route path="/awards" element={<PrivateRoute><Awards /></PrivateRoute>} />
               <Route path="/analysis" element={<PrivateRoute><Analysis /></PrivateRoute>} />
+              <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
               
               {/* Admin routes */}
               <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
