@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -55,6 +56,9 @@ const AppWithProviders = () => (
               <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
               <Route path="/admin/users" element={<AdminRoute><UserManagement /></AdminRoute>} />
               
+              {/* This route triggers logout functionality */}
+              <Route path="/logout" element={<LogoutRoute />} />
+              
               {/* Catch-all route */}
               <Route path="*" element={<NotFound />} />
             </Routes>
@@ -64,5 +68,19 @@ const AppWithProviders = () => (
     </TooltipProvider>
   </QueryClientProvider>
 );
+
+// Special component to handle logout
+const LogoutRoute = () => {
+  const { signOut } = useAuth();
+  
+  React.useEffect(() => {
+    signOut();
+  }, [signOut]);
+  
+  return <Navigate to="/" replace />;
+};
+
+// Import at the top
+import { useAuth } from './context/AuthContext';
 
 export default AppWithProviders;

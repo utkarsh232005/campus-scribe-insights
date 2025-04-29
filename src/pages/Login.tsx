@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -79,14 +79,17 @@ const Login = () => {
   }, [isSignUp, facultyForm]);
 
   // Redirect if already logged in
-  if (user && !loading) {
-    return <Navigate to={from} replace />;
-  }
+  useEffect(() => {
+    if (user && !loading) {
+      navigate(from, { replace: true });
+    }
+  }, [user, loading, navigate, from]);
 
   async function onFacultySubmit(data: LoginFormValues) {
     setIsLoading(true);
     try {
       await signIn(data.email, data.password);
+      // The redirection is handled in the useEffect above, not here
     } finally {
       setIsLoading(false);
     }
@@ -96,9 +99,15 @@ const Login = () => {
     setIsLoading(true);
     try {
       await adminLogin(data.email, data.password);
+      // The redirection is handled in the useEffect above, not here
     } finally {
       setIsLoading(false);
     }
+  }
+
+  // If user is already logged in and has finished loading, redirect them
+  if (user && !loading) {
+    return <Navigate to={from} replace />;
   }
 
   return (

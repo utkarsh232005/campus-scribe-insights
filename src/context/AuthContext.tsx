@@ -56,6 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     fetchUserSession();
 
+    // Set up auth state change listener
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
         setUser(session.user as User);
@@ -64,18 +65,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setIsAdmin(false);
+        // Redirect to landing page on sign out
+        navigate('/');
       }
     });
 
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
   const signIn = async (email: string, password: string) => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      // Configure auth to NOT persist session to localStorage
+      const { data, error } = await supabase.auth.signInWithPassword({ 
+        email, 
+        password 
+      });
       
       if (error) throw error;
       
@@ -112,7 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setLoading(true);
     try {
-      // First check if admin user already exists
+      // Configure auth to NOT persist session to localStorage
       const { data, error } = await supabase.auth.signInWithPassword({ 
         email: 'admin@gmail.com', 
         password: 'admin123' 
@@ -173,7 +180,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         title: "Logged out",
         description: "You've been successfully signed out.",
       });
-      navigate('/login');
+      // Redirect to landing page after logout
+      navigate('/');
     } catch (error: any) {
       toast({
         title: "Error",

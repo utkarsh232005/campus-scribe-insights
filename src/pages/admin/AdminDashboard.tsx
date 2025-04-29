@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { UserProfile } from '@/types/user';
@@ -7,23 +8,25 @@ const AdminDashboard = () => {
   
   useEffect(() => {
     const fetchUsers = async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select(`
-          id,
-          email,
-          department,
-          created_at,
-          last_sign_in_at
-        `);
-
-      if (error) {
-        console.error('Error fetching users:', error);
+      // Get users from auth.users
+      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+      
+      if (authError) {
+        console.error('Error fetching users:', authError);
         return;
       }
-
-      if (data) {
-        setUsers(data as UserProfile[]);
+      
+      if (authUsers) {
+        // Map auth users to UserProfile format
+        const formattedUsers: UserProfile[] = authUsers.users.map(user => ({
+          id: user.id,
+          email: user.email || '',
+          department: user.user_metadata?.department || 'Not set',
+          created_at: user.created_at || '',
+          last_sign_in_at: user.last_sign_in_at || null
+        }));
+        
+        setUsers(formattedUsers);
       }
     };
 

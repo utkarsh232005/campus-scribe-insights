@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from "@/lib/utils";
 import { 
   BarChart, 
@@ -20,15 +19,16 @@ import { useAuth } from '@/context/AuthContext';
 
 const Sidebar = () => {
   const location = useLocation();
-  const { user, isAdmin } = useAuth();
+  const navigate = useNavigate();
+  const { user, isAdmin, signOut } = useAuth();
   const [isHovered, setIsHovered] = useState(false);
 
   const menuItems = [
     {
       title: 'Dashboard',
       icon: Home,
-      path: '/',
-      active: location.pathname === '/',
+      path: '/dashboard',
+      active: location.pathname === '/dashboard',
     },
     {
       title: 'Reports',
@@ -95,6 +95,11 @@ const Sidebar = () => {
     ? [...menuItems, ...adminMenuItems] 
     : menuItems;
 
+  const handleLogout = (e: React.MouseEvent) => {
+    e.preventDefault();
+    navigate('/logout');
+  };
+
   return (
     <div 
       className={cn(
@@ -108,7 +113,7 @@ const Sidebar = () => {
         "p-4 flex items-center justify-between border-b border-gray-800",
         isHovered ? "justify-between" : "justify-center"
       )}>
-        <Link to="/" className="flex items-center">
+        <Link to="/dashboard" className="flex items-center">
           <School className="text-blue-500 h-8 w-8" />
           {isHovered && (
             <span className="ml-2 text-xl font-bold text-white">COLLEGE REPORT</span>
@@ -147,8 +152,9 @@ const Sidebar = () => {
       </div>
 
       <div className="p-4 border-t border-gray-800">
-        <Link
-          to="/logout"
+        <a
+          href="#"
+          onClick={handleLogout}
           className={cn(
             "flex items-center py-2 px-3 rounded-md text-red-500 hover:bg-gray-800 transition-colors",
             isHovered ? "justify-start" : "justify-center"
@@ -159,7 +165,7 @@ const Sidebar = () => {
             isHovered ? "mr-3" : "mr-0"
           )} />
           {isHovered && <span>Logout</span>}
-        </Link>
+        </a>
       </div>
     </div>
   );

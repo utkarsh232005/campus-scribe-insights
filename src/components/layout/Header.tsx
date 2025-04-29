@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Bell, Settings } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,11 @@ interface HeaderProps {
 const Header = ({ user }: HeaderProps) => {
   const { notifications } = useNotifications();
   const [showNotifications, setShowNotifications] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    navigate('/logout');
+  };
 
   return (
     <header className="h-16 bg-gray-900 border-b border-gray-800 flex items-center justify-end px-6">
@@ -87,8 +93,11 @@ const Header = ({ user }: HeaderProps) => {
               <Link to="/settings" className="w-full">Settings</Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-gray-700" />
-            <DropdownMenuItem className="text-gray-200 focus:bg-gray-700 focus:text-gray-100">
-              <Link to="/logout" className="w-full">Logout</Link>
+            <DropdownMenuItem 
+              className="text-gray-200 focus:bg-gray-700 focus:text-gray-100 cursor-pointer"
+              onClick={handleLogout}
+            >
+              Logout
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
