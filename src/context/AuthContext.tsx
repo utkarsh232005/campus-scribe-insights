@@ -31,6 +31,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState(false);
   
+  // Check if a user is admin by looking for their email in the admin_users table
+  const checkIfUserIsAdmin = async (email: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('admin_users')
+        .select('*')
+        .eq('email', email)
+        .eq('is_active', true)
+        .single();
+      
+      return !error && data;
+    } catch (error) {
+      console.error('Error checking admin status:', error);
+      return false;
+    }
+  };
+  
   useEffect(() => {
     const fetchUserSession = async () => {
       setLoading(true);
@@ -44,8 +61,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (session) {
           setUser(session.user as User);
-          setIsAdmin(session.user?.email === 'admin@example.com' || 
-                    session.user?.user_metadata?.role === 'admin');
+          
+          // Check if user is admin
+          const userIsAdmin = await checkIfUserIsAdmin(session.user.email || '');
+          setIsAdmin(userIsAdmin || session.user.email === 'admin@example.com');
         }
       } catch (error) {
         console.error('Error in auth check:', error);
@@ -57,11 +76,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     fetchUserSession();
 
     // Set up auth state change listener
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
         setUser(session.user as User);
-        setIsAdmin(session.user?.email === 'admin@example.com' || 
-                  session.user?.user_metadata?.role === 'admin');
+        
+        // Check admin status on sign in
+        const userEmail = session.user?.email || '';
+        const userIsAdmin = await checkIfUserIsAdmin(userEmail);
+        setIsAdmin(userIsAdmin || userEmail === 'admin@example.com');
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setIsAdmin(false);
@@ -87,8 +109,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (data.user) {
         setUser(data.user as User);
-        setIsAdmin(data.user.email === 'admin@example.com' || 
-                  data.user.user_metadata?.role === 'admin');
+        
+        // Check admin status
+        const userIsAdmin = await checkIfUserIsAdmin(data.user.email || '');
+        setIsAdmin(userIsAdmin || data.user.email === 'admin@example.com');
+        
         toast({
           title: "Login successful",
           description: "Welcome back!",
@@ -118,11 +143,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setLoading(true);
     try {
-      // First check if admin user exists
-      const { data: existingUser, error: checkError } = await supabase.auth.admin.getUserByEmail(email);
+      // Check if admin exists in admin_users table
+      const { data: adminData } = await supabase
+        .from('admin_users')
+        .select('*')
+        .eq('email', email)
+        .single();
       
-      if (checkError && !existingUser) {
-        // Admin doesn't exist, let's create them
+      if (!adminData) {
+        // If admin doesn't exist in the table, create it
+        await supabase.from('admin_users').insert({
+          email: 'admin@example.com',
+          is_active: true
+        });
+      }
+      
+      // Try to sign in
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: 'admin@example.com',
+        password: password
+      });
+      
+      if (signInError) {
+        // If sign in fails, user might not exist, so try to create it
         const { data: signupData, error: signupError } = await supabase.auth.signUp({
           email: 'admin@example.com',
           password: password,
@@ -136,43 +179,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (signupError) throw signupError;
         
-        if (signupData.user) {
-          // After signup, try login
-          const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
-            email: 'admin@example.com',
-            password: password
-          });
-          
-          if (loginError) throw loginError;
-          
-          if (loginData.user) {
-            setUser(loginData.user as User);
-            setIsAdmin(true);
-            toast({
-              title: "Admin account created & logged in",
-              description: "Welcome to admin dashboard!",
-            });
-            navigate('/admin');
-          }
-        }
-      } else {
-        // Admin exists, try to login
-        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
-          email: 'admin@example.com',
-          password: password
+        toast({
+          title: "Admin account created",
+          description: "Please verify your email to log in as admin.",
         });
-        
-        if (loginError) throw loginError;
-        
-        if (loginData.user) {
-          setUser(loginData.user as User);
-          setIsAdmin(true);
-          toast({
-            title: "Admin login successful",
-            description: "Welcome back, Admin!",
-          });
-          navigate('/admin');
-        }
+      } else if (signInData.user) {
+        // Sign in successful
+        setUser(signInData.user as User);
+        setIsAdmin(true);
+        toast({
+          title: "Admin login successful",
+          description: "Welcome, Admin!",
+        });
+        navigate('/admin');
       }
     } catch (error: any) {
       toast({

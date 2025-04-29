@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { UserProfile } from '@/types/user';
-import { motion } from 'framer-motion';
 
 const AdminDashboard = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -12,8 +11,11 @@ const AdminDashboard = () => {
     const fetchUsers = async () => {
       setLoading(true);
       try {
-        // Get all users - this endpoint requires admin privileges
-        const { data, error } = await supabase.auth.admin.listUsers();
+        // Get users from profiles table instead of auth directly
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('created_at', { ascending: false });
         
         if (error) {
           console.error('Error fetching users:', error);
@@ -21,13 +23,13 @@ const AdminDashboard = () => {
         }
         
         if (data) {
-          // Map auth users to UserProfile format
-          const formattedUsers: UserProfile[] = data.users.map(user => ({
+          // Format the data as UserProfile objects
+          const formattedUsers: UserProfile[] = data.map(user => ({
             id: user.id,
-            email: user.email || '',
-            department: user.user_metadata?.department || 'Not set',
-            created_at: user.created_at || '',
-            last_sign_in_at: user.last_sign_in_at || null
+            email: `${user.department}@example.com`, // Since email is not in profiles table
+            department: user.department,
+            created_at: user.created_at,
+            last_sign_in_at: null // Not available from profiles table
           }));
           
           setUsers(formattedUsers);
@@ -42,52 +44,16 @@ const AdminDashboard = () => {
     fetchUsers();
   }, []);
 
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        type: "spring",
-        stiffness: 100
-      }
-    }
-  };
-
   return (
-    <motion.div 
-      className="container mx-auto p-4"
-      initial="hidden"
-      animate="visible"
-      variants={containerVariants}
-    >
-      <motion.h1 
-        className="text-2xl font-bold mb-4"
-        variants={itemVariants}
-      >
-        Admin Dashboard
-      </motion.h1>
+    <div className="container mx-auto p-4 animate-fade-in">
+      <h1 className="text-2xl font-bold mb-4">Admin Dashboard</h1>
       
       {loading ? (
         <div className="flex justify-center py-10">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
         </div>
       ) : (
-        <motion.div 
-          className="overflow-x-auto bg-gray-900/80 rounded-lg shadow-xl"
-          variants={itemVariants}
-        >
+        <div className="overflow-x-auto bg-gray-900/80 rounded-lg shadow-xl">
           <table className="min-w-full">
             <thead>
               <tr className="bg-gray-800 text-gray-300">
@@ -99,13 +65,8 @@ const AdminDashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {users.map((user, index) => (
-                <motion.tr 
-                  key={user.id} 
-                  className="border-t border-gray-700 hover:bg-gray-800/50 transition-colors"
-                  variants={itemVariants}
-                  custom={index}
-                >
+              {users.map((user) => (
+                <tr key={user.id} className="border-t border-gray-700 hover:bg-gray-800/50 transition-colors">
                   <td className="py-3 px-4 text-gray-300">{user.id.slice(0, 8)}...</td>
                   <td className="py-3 px-4 text-gray-300">{user.email}</td>
                   <td className="py-3 px-4 text-gray-300">{user.department}</td>
@@ -113,7 +74,7 @@ const AdminDashboard = () => {
                   <td className="py-3 px-4 text-gray-300">
                     {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString() : 'N/A'}
                   </td>
-                </motion.tr>
+                </tr>
               ))}
               {users.length === 0 && (
                 <tr>
@@ -124,9 +85,9 @@ const AdminDashboard = () => {
               )}
             </tbody>
           </table>
-        </motion.div>
+        </div>
       )}
-    </motion.div>
+    </div>
   );
 };
 
