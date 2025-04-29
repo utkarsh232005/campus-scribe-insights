@@ -44,7 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (session) {
           setUser(session.user as User);
-          setIsAdmin(session.user?.email === 'admin@gmail.com' || 
+          setIsAdmin(session.user?.email === 'admin@example.com' || 
                     session.user?.user_metadata?.role === 'admin');
         }
       } catch (error) {
@@ -60,7 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
         setUser(session.user as User);
-        setIsAdmin(session.user?.email === 'admin@gmail.com' || 
+        setIsAdmin(session.user?.email === 'admin@example.com' || 
                   session.user?.user_metadata?.role === 'admin');
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
@@ -78,7 +78,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     setLoading(true);
     try {
-      // Configure auth to NOT persist session to localStorage
       const { data, error } = await supabase.auth.signInWithPassword({ 
         email, 
         password 
@@ -88,7 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (data.user) {
         setUser(data.user as User);
-        setIsAdmin(data.user.email === 'admin@gmail.com' || 
+        setIsAdmin(data.user.email === 'admin@example.com' || 
                   data.user.user_metadata?.role === 'admin');
         toast({
           title: "Login successful",
@@ -108,10 +107,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const adminLogin = async (email: string, password: string) => {
-    if (email !== 'admin@gmail.com' || password !== 'admin123') {
+    if (email !== 'admin@example.com') {
       toast({
         title: "Admin login failed",
-        description: "Invalid admin credentials",
+        description: "Invalid admin email",
         variant: "destructive",
       });
       return;
@@ -119,17 +118,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setLoading(true);
     try {
-      // Configure auth to NOT persist session to localStorage
-      const { data, error } = await supabase.auth.signInWithPassword({ 
-        email: 'admin@gmail.com', 
-        password: 'admin123' 
-      });
+      // First check if admin user exists
+      const { data: existingUser, error: checkError } = await supabase.auth.admin.getUserByEmail(email);
       
-      if (error && error.message.includes('Invalid login credentials')) {
+      if (checkError && !existingUser) {
         // Admin doesn't exist, let's create them
         const { data: signupData, error: signupError } = await supabase.auth.signUp({
-          email: 'admin@gmail.com',
-          password: 'admin123',
+          email: 'admin@example.com',
+          password: password,
           options: {
             data: {
               role: 'admin',
@@ -141,23 +137,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (signupError) throw signupError;
         
         if (signupData.user) {
-          setUser(signupData.user as User);
+          // After signup, try login
+          const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+            email: 'admin@example.com',
+            password: password
+          });
+          
+          if (loginError) throw loginError;
+          
+          if (loginData.user) {
+            setUser(loginData.user as User);
+            setIsAdmin(true);
+            toast({
+              title: "Admin account created & logged in",
+              description: "Welcome to admin dashboard!",
+            });
+            navigate('/admin');
+          }
+        }
+      } else {
+        // Admin exists, try to login
+        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+          email: 'admin@example.com',
+          password: password
+        });
+        
+        if (loginError) throw loginError;
+        
+        if (loginData.user) {
+          setUser(loginData.user as User);
           setIsAdmin(true);
           toast({
-            title: "Admin account created",
-            description: "Welcome to admin dashboard!",
+            title: "Admin login successful",
+            description: "Welcome back, Admin!",
           });
           navigate('/admin');
-          return;
         }
-      } else if (data.user) {
-        setUser(data.user as User);
-        setIsAdmin(true);
-        toast({
-          title: "Admin login successful",
-          description: "Welcome back, Admin!",
-        });
-        navigate('/admin');
       }
     } catch (error: any) {
       toast({

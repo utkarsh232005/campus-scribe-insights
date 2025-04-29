@@ -37,7 +37,7 @@ const loginSchema = z.object({
 });
 
 const adminLoginSchema = z.object({
-  email: z.string().email({ message: "Please enter admin email" }).refine(val => val === "admin@gmail.com", {
+  email: z.string().email({ message: "Please enter admin email" }).refine(val => val === "admin@example.com", {
     message: "Invalid admin email"
   }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" })
@@ -68,7 +68,7 @@ const Login = () => {
   const adminForm = useForm<AdminLoginFormValues>({
     resolver: zodResolver(adminLoginSchema),
     defaultValues: {
-      email: "admin@gmail.com",
+      email: "admin@example.com",
       password: "",
     },
   });
