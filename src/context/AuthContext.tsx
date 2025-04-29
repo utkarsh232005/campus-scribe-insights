@@ -41,7 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('is_active', true)
         .single();
       
-      return !error && data;
+      return !error && data !== null;
     } catch (error) {
       console.error('Error checking admin status:', error);
       return false;
@@ -143,29 +143,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setLoading(true);
     try {
-      // Check if admin exists in admin_users table
-      const { data: adminData } = await supabase
-        .from('admin_users')
-        .select('*')
-        .eq('email', email)
-        .single();
-      
-      if (!adminData) {
-        // If admin doesn't exist in the table, create it
-        await supabase.from('admin_users').insert({
-          email: 'admin@example.com',
-          is_active: true
-        });
-      }
-      
-      // Try to sign in
+      // Try to sign in first
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email: 'admin@example.com',
         password: password
       });
       
       if (signInError) {
-        // If sign in fails, user might not exist, so try to create it
+        // If sign in fails, try to sign up
         const { data: signupData, error: signupError } = await supabase.auth.signUp({
           email: 'admin@example.com',
           password: password,
@@ -179,14 +164,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (signupError) throw signupError;
         
+        // Check if admin exists in admin_users table
+        const { data: adminExists } = await supabase
+          .from('admin_users')
+          .select('*')
+          .eq('email', 'admin@example.com')
+          .single();
+        
+        // If admin doesn't exist in the table, create it
+        if (!adminExists) {
+          await supabase.from('admin_users').insert({
+            email: 'admin@example.com',
+            is_active: true
+          });
+        }
+        
         toast({
           title: "Admin account created",
-          description: "Please verify your email to log in as admin.",
+          description: "Please check your email to verify your admin account.",
         });
       } else if (signInData.user) {
         // Sign in successful
         setUser(signInData.user as User);
+        
+        // Ensure admin record exists
+        const { data: adminExists } = await supabase
+          .from('admin_users')
+          .select('*')
+          .eq('email', 'admin@example.com')
+          .single();
+          
+        if (!adminExists) {
+          await supabase.from('admin_users').insert({
+            email: 'admin@example.com',
+            is_active: true
+          });
+        }
+        
         setIsAdmin(true);
+        
         toast({
           title: "Admin login successful",
           description: "Welcome, Admin!",
