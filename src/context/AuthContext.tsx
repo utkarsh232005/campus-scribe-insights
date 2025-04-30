@@ -65,6 +65,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Check if user is admin
           const userIsAdmin = await checkIfUserIsAdmin(session.user.email || '');
           setIsAdmin(userIsAdmin);
+          
+          console.log('Session found:', session.user);
+          console.log('User metadata:', session.user.user_metadata);
+          console.log('Is admin:', userIsAdmin);
         }
       } catch (error) {
         console.error('Error in auth check:', error);
@@ -77,6 +81,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Set up auth state change listener
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event);
+      
       if (event === 'SIGNED_IN' && session) {
         setUser(session.user as User);
         
@@ -84,11 +90,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const userEmail = session.user?.email || '';
         const userIsAdmin = await checkIfUserIsAdmin(userEmail);
         setIsAdmin(userIsAdmin);
+        
+        console.log('Signed in user:', session.user);
+        console.log('User metadata:', session.user.user_metadata);
+        console.log('Is admin:', userIsAdmin);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setIsAdmin(false);
         // Redirect to landing page on sign out
         navigate('/');
+      } else if (event === 'USER_UPDATED') {
+        // Handle user updates
+        setUser(session?.user as User);
       }
     });
 
