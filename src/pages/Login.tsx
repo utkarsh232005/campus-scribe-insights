@@ -114,6 +114,8 @@ const Login = () => {
           return;
         }
         
+        console.log("Signing up with department:", signupData.department);
+        
         // Register new user with department in metadata
         const { error } = await supabase.auth.signUp({
           email: signupData.email,
@@ -137,6 +139,7 @@ const Login = () => {
         await signIn(data.email, data.password);
       }
     } catch (error: any) {
+      console.error("Signup/Login error:", error);
       toast({
         title: isSignUp ? "Sign up failed" : "Login failed",
         description: error.message,
