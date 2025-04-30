@@ -64,7 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           // Check if user is admin
           const userIsAdmin = await checkIfUserIsAdmin(session.user.email || '');
-          setIsAdmin(userIsAdmin || session.user.email === 'admin@example.com');
+          setIsAdmin(userIsAdmin);
         }
       } catch (error) {
         console.error('Error in auth check:', error);
@@ -83,7 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Check admin status on sign in
         const userEmail = session.user?.email || '';
         const userIsAdmin = await checkIfUserIsAdmin(userEmail);
-        setIsAdmin(userIsAdmin || userEmail === 'admin@example.com');
+        setIsAdmin(userIsAdmin);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setIsAdmin(false);
@@ -112,7 +112,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Check admin status
         const userIsAdmin = await checkIfUserIsAdmin(data.user.email || '');
-        setIsAdmin(userIsAdmin || data.user.email === 'admin@example.com');
+        setIsAdmin(userIsAdmin);
         
         toast({
           title: "Login successful",
@@ -132,75 +132,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const adminLogin = async (email: string, password: string) => {
-    if (email !== 'admin@example.com') {
-      toast({
-        title: "Admin login failed",
-        description: "Invalid admin email",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setLoading(true);
     try {
-      // Try to sign in first
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email: 'admin@example.com',
-        password: password
+      // Try regular sign in for admin
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
       });
       
-      if (signInError) {
-        // If sign in fails, try to sign up
-        const { data: signupData, error: signupError } = await supabase.auth.signUp({
-          email: 'admin@example.com',
-          password: password,
-          options: {
-            data: {
-              role: 'admin',
-              department: 'admin',
-            }
-          }
-        });
-        
-        if (signupError) throw signupError;
-        
-        // Check if admin exists in admin_users table
-        const { data: adminExists } = await supabase
-          .from('admin_users')
-          .select('*')
-          .eq('email', 'admin@example.com')
-          .single();
-        
-        // If admin doesn't exist in the table, create it
-        if (!adminExists) {
-          await supabase.from('admin_users').insert({
-            email: 'admin@example.com',
-            is_active: true
-          });
-        }
-        
+      if (error) {
         toast({
-          title: "Admin account created",
-          description: "Please check your email to verify your admin account.",
+          title: "Admin login failed",
+          description: error.message,
+          variant: "destructive",
         });
-      } else if (signInData.user) {
-        // Sign in successful
-        setUser(signInData.user as User);
-        
-        // Ensure admin record exists
-        const { data: adminExists } = await supabase
+        setLoading(false);
+        return;
+      }
+      
+      if (data.user) {
+        // Check if user has admin rights in the admin_users table
+        const { data: adminData, error: adminError } = await supabase
           .from('admin_users')
           .select('*')
-          .eq('email', 'admin@example.com')
+          .eq('email', email)
+          .eq('is_active', true)
           .single();
-          
-        if (!adminExists) {
-          await supabase.from('admin_users').insert({
-            email: 'admin@example.com',
-            is_active: true
+        
+        if (adminError || !adminData) {
+          // User exists but is not an admin
+          await supabase.auth.signOut();
+          toast({
+            title: "Admin access denied",
+            description: "Your account does not have administrator privileges.",
+            variant: "destructive",
           });
+          setLoading(false);
+          return;
         }
         
+        // User is admin
+        setUser(data.user as User);
         setIsAdmin(true);
         
         toast({

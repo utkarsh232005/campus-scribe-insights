@@ -11,7 +11,7 @@ const AdminDashboard = () => {
     const fetchUsers = async () => {
       setLoading(true);
       try {
-        // Get users from profiles table instead of auth directly
+        // Get users from profiles table
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
@@ -22,14 +22,27 @@ const AdminDashboard = () => {
           return;
         }
         
+        // Also get admin users to mark them
+        const { data: adminData, error: adminError } = await supabase
+          .from('admin_users')
+          .select('email')
+          .eq('is_active', true);
+        
+        if (adminError) {
+          console.error('Error fetching admin users:', adminError);
+        }
+        
+        const adminEmails = adminData ? adminData.map(admin => admin.email) : [];
+        
         if (data) {
           // Format the data as UserProfile objects
           const formattedUsers: UserProfile[] = data.map(user => ({
             id: user.id,
-            email: `${user.department}@example.com`, // Since email is not in profiles table
+            email: `${user.department}@faculty.edu`, // Example email since profile doesn't store it
             department: user.department,
             created_at: user.created_at,
-            last_sign_in_at: null // Not available from profiles table
+            last_sign_in_at: null, // Not available from profiles table
+            isAdmin: adminEmails.includes(`${user.department}@faculty.edu`)
           }));
           
           setUsers(formattedUsers);
@@ -60,8 +73,8 @@ const AdminDashboard = () => {
                 <th className="py-3 px-4 text-left">ID</th>
                 <th className="py-3 px-4 text-left">Email</th>
                 <th className="py-3 px-4 text-left">Department</th>
+                <th className="py-3 px-4 text-left">Role</th>
                 <th className="py-3 px-4 text-left">Created At</th>
-                <th className="py-3 px-4 text-left">Last Sign In</th>
               </tr>
             </thead>
             <tbody>
@@ -70,10 +83,14 @@ const AdminDashboard = () => {
                   <td className="py-3 px-4 text-gray-300">{user.id.slice(0, 8)}...</td>
                   <td className="py-3 px-4 text-gray-300">{user.email}</td>
                   <td className="py-3 px-4 text-gray-300">{user.department}</td>
-                  <td className="py-3 px-4 text-gray-300">{new Date(user.created_at).toLocaleDateString()}</td>
                   <td className="py-3 px-4 text-gray-300">
-                    {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString() : 'N/A'}
+                    {user.isAdmin ? (
+                      <span className="px-2 py-1 bg-purple-900/50 text-purple-300 rounded-full text-xs">Admin</span>
+                    ) : (
+                      <span className="px-2 py-1 bg-blue-900/50 text-blue-300 rounded-full text-xs">Faculty</span>
+                    )}
                   </td>
+                  <td className="py-3 px-4 text-gray-300">{new Date(user.created_at).toLocaleDateString()}</td>
                 </tr>
               ))}
               {users.length === 0 && (

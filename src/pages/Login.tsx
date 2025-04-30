@@ -37,9 +37,7 @@ const loginSchema = z.object({
 });
 
 const adminLoginSchema = z.object({
-  email: z.string().email({ message: "Please enter admin email" }).refine(val => val === "admin@example.com", {
-    message: "Invalid admin email"
-  }),
+  email: z.string().email({ message: "Please enter admin email" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" })
 });
 
@@ -68,7 +66,7 @@ const Login = () => {
   const adminForm = useForm<AdminLoginFormValues>({
     resolver: zodResolver(adminLoginSchema),
     defaultValues: {
-      email: "admin@example.com",
+      email: "",
       password: "",
     },
   });
@@ -244,7 +242,7 @@ const Login = () => {
                         <FormControl>
                           <div className="relative">
                             <Mail className="absolute left-3 top-2.5 h-5 w-5 text-gray-500" />
-                            <Input {...field} className="pl-10 bg-gray-800/50 border-gray-700 text-white" readOnly />
+                            <Input placeholder="admin@example.com" {...field} className="pl-10 bg-gray-800/50 border-gray-700 text-white" />
                           </div>
                         </FormControl>
                         <FormMessage />
@@ -265,7 +263,7 @@ const Login = () => {
                           </div>
                         </FormControl>
                         <FormMessage />
-                        <p className="text-xs text-gray-400 mt-1">Default password: admin123</p>
+                        <p className="text-xs text-gray-400 mt-1">Enter your admin credentials</p>
                       </FormItem>
                     )}
                   />
