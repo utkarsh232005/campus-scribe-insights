@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { UserProfile } from '@/types/user';
+import { toast } from '@/components/ui/use-toast';
 
 const AdminDashboard = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -19,6 +20,11 @@ const AdminDashboard = () => {
         
         if (error) {
           console.error('Error fetching users:', error);
+          toast({
+            title: "Error",
+            description: "Failed to fetch user data",
+            variant: "destructive",
+          });
           return;
         }
         
@@ -38,10 +44,10 @@ const AdminDashboard = () => {
           // Format the data as UserProfile objects
           const formattedUsers: UserProfile[] = data.map(user => ({
             id: user.id,
-            email: `${user.department}@faculty.edu`, // Example email since profile doesn't store it
+            email: `${user.department}@faculty.edu`, // Generate email from department
             department: user.department,
             created_at: user.created_at,
-            last_sign_in_at: null, // Not available from profiles table
+            last_sign_in_at: null,
             isAdmin: adminEmails.includes(`${user.department}@faculty.edu`)
           }));
           
@@ -49,6 +55,11 @@ const AdminDashboard = () => {
         }
       } catch (error) {
         console.error('Failed to fetch users:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load user data",
+          variant: "destructive",
+        });
       } finally {
         setLoading(false);
       }

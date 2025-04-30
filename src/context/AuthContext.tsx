@@ -134,6 +134,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const adminLogin = async (email: string, password: string) => {
     setLoading(true);
     try {
+      // First check if the email is in admin_users table
+      const { data: adminData, error: adminCheckError } = await supabase
+        .from('admin_users')
+        .select('*')
+        .eq('email', email)
+        .eq('is_active', true)
+        .single();
+      
+      if (adminCheckError || !adminData) {
+        toast({
+          title: "Admin access denied",
+          description: "This email is not registered as an admin",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+      
       // Try regular sign in for admin
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -151,26 +169,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       if (data.user) {
-        // Check if user has admin rights in the admin_users table
-        const { data: adminData, error: adminError } = await supabase
-          .from('admin_users')
-          .select('*')
-          .eq('email', email)
-          .eq('is_active', true)
-          .single();
-        
-        if (adminError || !adminData) {
-          // User exists but is not an admin
-          await supabase.auth.signOut();
-          toast({
-            title: "Admin access denied",
-            description: "Your account does not have administrator privileges.",
-            variant: "destructive",
-          });
-          setLoading(false);
-          return;
-        }
-        
         // User is admin
         setUser(data.user as User);
         setIsAdmin(true);

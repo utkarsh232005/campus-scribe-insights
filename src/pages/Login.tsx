@@ -29,6 +29,8 @@ import {
 import { School, LockKeyhole, Mail, ShieldCheck } from 'lucide-react';
 import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid college email address" }),
@@ -85,9 +87,48 @@ const Login = () => {
 
   async function onFacultySubmit(data: LoginFormValues) {
     setIsLoading(true);
+    
     try {
-      await signIn(data.email, data.password);
-      // The redirection is handled in the useEffect above, not here
+      if (isSignUp) {
+        // For signup, department is required
+        if (!data.department) {
+          toast({
+            title: "Error",
+            description: "Department is required for signup",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+        
+        // Register new user with department in metadata
+        const { error } = await supabase.auth.signUp({
+          email: data.email,
+          password: data.password,
+          options: {
+            data: {
+              department: data.department
+            }
+          }
+        });
+        
+        if (error) throw error;
+        
+        toast({
+          title: "Account created",
+          description: "Check your email for a confirmation link",
+        });
+        
+      } else {
+        // For login
+        await signIn(data.email, data.password);
+      }
+    } catch (error: any) {
+      toast({
+        title: isSignUp ? "Sign up failed" : "Login failed",
+        description: error.message,
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -97,7 +138,12 @@ const Login = () => {
     setIsLoading(true);
     try {
       await adminLogin(data.email, data.password);
-      // The redirection is handled in the useEffect above, not here
+    } catch (error: any) {
+      toast({
+        title: "Admin login failed",
+        description: error.message,
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
