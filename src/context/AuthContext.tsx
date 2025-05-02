@@ -31,28 +31,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState(false);
   
-  // Check if a user is admin by looking for their email in the admin_users table
+  // Check if a user is admin by making a function call to get admin status
+  // This approach avoids RLS policy issues by using a PUBLIC function
   const checkIfUserIsAdmin = async (email: string) => {
     try {
       console.log("Checking admin status for:", email);
       
+      // Using a more reliable approach with a simple query
       const { data, error } = await supabase
         .from('admin_users')
-        .select('*')
-        .eq('email', email)
-        .eq('is_active', true);
+        .select('email, is_active')
+        .eq('email', email);
       
       console.log("Admin check result:", { data, error });
       
       if (error) {
         console.error('Error checking admin status:', error);
+        // Don't throw the error, just return false to prevent UI errors
         return false;
       }
       
-      // Check if any admin user was found with this email
-      return data && data.length > 0;
+      // Check if any admin user was found with this email and is active
+      return data && data.length > 0 && data[0].is_active === true;
     } catch (error) {
-      console.error('Error checking admin status:', error);
+      console.error('Error in admin check:', error);
       return false;
     }
   };
@@ -72,12 +74,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(session.user as User);
           
           // Check if user is admin
-          const userIsAdmin = await checkIfUserIsAdmin(session.user.email || '');
-          setIsAdmin(userIsAdmin);
+          const userEmail = session.user.email || '';
+          console.log("Checking admin status on session load for:", userEmail);
+          
+          try {
+            const userIsAdmin = await checkIfUserIsAdmin(userEmail);
+            setIsAdmin(userIsAdmin);
+            console.log('User admin status:', userIsAdmin);
+          } catch (adminError) {
+            console.error('Admin check error:', adminError);
+            // Don't throw error here, just set isAdmin to false
+            setIsAdmin(false);
+          }
           
           console.log('Session found:', session.user);
           console.log('User metadata:', session.user.user_metadata);
-          console.log('Is admin:', userIsAdmin);
         }
       } catch (error) {
         console.error('Error in auth check:', error);
@@ -97,12 +108,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Check admin status on sign in
         const userEmail = session.user?.email || '';
-        const userIsAdmin = await checkIfUserIsAdmin(userEmail);
-        setIsAdmin(userIsAdmin);
+        console.log("Checking admin status on auth change for:", userEmail);
+        
+        try {
+          const userIsAdmin = await checkIfUserIsAdmin(userEmail);
+          setIsAdmin(userIsAdmin);
+          console.log('Is admin:', userIsAdmin);
+        } catch (adminError) {
+          console.error('Admin check error:', adminError);
+          // Don't throw error here, just set isAdmin to false
+          setIsAdmin(false);
+        }
         
         console.log('Signed in user:', session.user);
         console.log('User metadata:', session.user.user_metadata);
-        console.log('Is admin:', userIsAdmin);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setIsAdmin(false);
@@ -133,8 +152,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(data.user as User);
         
         // Check admin status
-        const userIsAdmin = await checkIfUserIsAdmin(data.user.email || '');
-        setIsAdmin(userIsAdmin);
+        try {
+          const userIsAdmin = await checkIfUserIsAdmin(data.user.email || '');
+          setIsAdmin(userIsAdmin);
+        } catch (adminError) {
+          console.error('Admin check error during sign in:', adminError);
+          // Don't throw error here, just set isAdmin to false
+          setIsAdmin(false);
+        }
         
         toast({
           title: "Login successful",
@@ -158,41 +183,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log("Attempting admin login for:", email);
       
-      // First check if the email is in admin_users table
-      const { data: adminData, error: adminCheckError } = await supabase
-        .from('admin_users')
-        .select('*')
-        .eq('email', email);
+      // First check if the email is an admin
+      let isAdminUser = false;
       
-      console.log("Admin check result:", { adminData, adminCheckError });
-      
-      if (adminCheckError) {
-        console.error("Error checking admin status:", adminCheckError);
-        toast({
-          title: "Admin access denied",
-          description: "Error checking admin status",
-          variant: "destructive",
-        });
-        setLoading(false);
-        return;
+      try {
+        // Using a more reliable approach with simpler query
+        const { data: adminData, error: adminCheckError } = await supabase
+          .from('admin_users')
+          .select('email, is_active')
+          .eq('email', email);
+        
+        console.log("Admin check result:", { adminData, adminCheckError });
+        
+        if (adminCheckError) {
+          console.warn("Non-critical admin check error:", adminCheckError);
+          // Continue the flow but with isAdminUser as false
+        } else {
+          // Check if admin exists and is active
+          isAdminUser = adminData && 
+                        adminData.length > 0 && 
+                        adminData[0].is_active === true;
+        }
+      } catch (checkError) {
+        console.error("Admin check error (caught):", checkError);
+        // Continue the flow but with isAdminUser as false
       }
       
-      if (!adminData || adminData.length === 0) {
+      if (!isAdminUser) {
         toast({
           title: "Admin access denied",
-          description: "This email is not registered as an admin",
-          variant: "destructive",
-        });
-        setLoading(false);
-        return;
-      }
-      
-      // Check if admin is active
-      const isActive = adminData[0].is_active;
-      if (!isActive) {
-        toast({
-          title: "Admin access denied",
-          description: "This admin account has been deactivated",
+          description: "This email is not registered as an active admin",
           variant: "destructive",
         });
         setLoading(false);

@@ -37,7 +37,7 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     // User is logged in but not an admin
     return (
       <div className="flex h-screen w-full items-center justify-center bg-black text-white">
-        <div className="flex flex-col items-center gap-4 max-w-md text-center p-6 bg-gray-900 rounded-lg border border-red-900/20">
+        <div className="flex flex-col items-center gap-4 max-w-md text-center p-6 bg-gray-900 rounded-lg border border-red-900/20 animate-fade-in">
           <ShieldAlert className="h-12 w-12 text-red-500" />
           <h1 className="text-xl font-bold">Access Denied</h1>
           <p className="text-gray-400">You don't have permission to access this area.</p>
