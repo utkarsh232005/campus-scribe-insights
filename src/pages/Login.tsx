@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -59,11 +58,11 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as any)?.from?.pathname || '/dashboard';
+  const adminRequired = (location.state as any)?.adminRequired || false;
   
   const [isSignUp, setIsSignUp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>("faculty");
-  const [adminSubmitted, setAdminSubmitted] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>(adminRequired ? "admin" : "faculty");
   
   // Use separate forms for login and signup
   const loginForm = useForm<LoginFormValues>({
@@ -157,9 +156,18 @@ const Login = () => {
 
   async function onAdminSubmit(data: AdminLoginFormValues) {
     setIsLoading(true);
-    setAdminSubmitted(true);
     
     try {
+      if (!data.email || !data.password) {
+        toast({
+          title: "Admin login failed",
+          description: "Email and password are required",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+      
       await adminLogin(data.email, data.password);
     } catch (error: any) {
       toast({
