@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -203,7 +204,7 @@ const Login = () => {
         <div className="bg-gray-900/50 backdrop-blur-lg py-8 px-4 shadow-xl shadow-blue-500/5 sm:rounded-lg sm:px-10 border border-gray-800 animate-scale-in">
           <Tabs defaultValue="faculty" value={activeTab} onValueChange={(val) => {
             setActiveTab(val);
-            setAdminSubmitted(false); // Reset admin form submission state when switching tabs
+            // Remove the reference to setAdminSubmitted and just set the tab
           }} className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="faculty" className="transition-all duration-300">

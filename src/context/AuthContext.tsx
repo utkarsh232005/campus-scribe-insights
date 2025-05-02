@@ -50,7 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Normalize the email (trim and lowercase)
       const normalizedEmail = email.trim().toLowerCase();
       
-      // Direct SQL query using RPC function to avoid RLS issues
+      // Use the new RPC function to avoid RLS issues
       const { data, error } = await supabase
         .rpc('get_admin_status', { admin_email: normalizedEmail });
       
