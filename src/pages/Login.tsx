@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -32,14 +31,15 @@ import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
+// Updated schema to accept any email format for faculty
 const loginSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid college email address" }),
+  email: z.string().email({ message: "Please enter a valid email address" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
 });
 
-// Separate signup schema to make department required for signup
+// Updated schema for signup to accept any email format
 const signupSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid college email address" }),
+  email: z.string().email({ message: "Please enter a valid email address" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
   department: z.string({ required_error: "Department is required" }),
 });

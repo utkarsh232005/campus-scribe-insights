@@ -34,14 +34,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Check if a user is admin by looking for their email in the admin_users table
   const checkIfUserIsAdmin = async (email: string) => {
     try {
+      console.log("Checking admin status for:", email);
+      
       const { data, error } = await supabase
         .from('admin_users')
         .select('*')
         .eq('email', email)
-        .eq('is_active', true)
-        .single();
+        .eq('is_active', true);
       
-      return !error && data !== null;
+      console.log("Admin check result:", { data, error });
+      
+      if (error) {
+        console.error('Error checking admin status:', error);
+        return false;
+      }
+      
+      // Check if any admin user was found with this email
+      return data && data.length > 0;
     } catch (error) {
       console.error('Error checking admin status:', error);
       return false;
@@ -147,18 +156,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const adminLogin = async (email: string, password: string) => {
     setLoading(true);
     try {
+      console.log("Attempting admin login for:", email);
+      
       // First check if the email is in admin_users table
       const { data: adminData, error: adminCheckError } = await supabase
         .from('admin_users')
         .select('*')
-        .eq('email', email)
-        .eq('is_active', true)
-        .single();
+        .eq('email', email);
       
-      if (adminCheckError || !adminData) {
+      console.log("Admin check result:", { adminData, adminCheckError });
+      
+      if (adminCheckError) {
+        console.error("Error checking admin status:", adminCheckError);
+        toast({
+          title: "Admin access denied",
+          description: "Error checking admin status",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+      
+      if (!adminData || adminData.length === 0) {
         toast({
           title: "Admin access denied",
           description: "This email is not registered as an admin",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+      
+      // Check if admin is active
+      const isActive = adminData[0].is_active;
+      if (!isActive) {
+        toast({
+          title: "Admin access denied",
+          description: "This admin account has been deactivated",
           variant: "destructive",
         });
         setLoading(false);
@@ -193,6 +227,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         navigate('/admin');
       }
     } catch (error: any) {
+      console.error("Admin login error:", error);
       toast({
         title: "Admin login failed",
         description: error.message,

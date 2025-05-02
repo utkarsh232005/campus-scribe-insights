@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Loader2, ShieldAlert } from 'lucide-react';
@@ -11,6 +11,11 @@ interface AdminRouteProps {
 const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
   const { user, isAdmin, loading } = useAuth();
   const location = useLocation();
+
+  useEffect(() => {
+    // Log the authentication state for debugging
+    console.log("AdminRoute - Auth state:", { user, isAdmin, loading });
+  }, [user, isAdmin, loading]);
 
   if (loading) {
     return (
@@ -24,7 +29,7 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
   }
 
   if (!user) {
-    // Redirect to login page
+    // Redirect to login page with a return path
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
