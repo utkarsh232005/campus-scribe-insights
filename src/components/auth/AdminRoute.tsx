@@ -20,7 +20,7 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
   if (loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-black">
-        <div className="flex flex-col items-center gap-2">
+        <div className="flex flex-col items-center gap-2 animate-pulse">
           <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
           <p className="text-sm text-gray-400">Checking admin permissions...</p>
         </div>
@@ -38,9 +38,10 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-black text-white">
         <div className="flex flex-col items-center gap-4 max-w-md text-center p-6 bg-gray-900 rounded-lg border border-red-900/20 animate-fade-in">
-          <ShieldAlert className="h-12 w-12 text-red-500" />
+          <ShieldAlert className="h-12 w-12 text-red-500 animate-pulse" />
           <h1 className="text-xl font-bold">Access Denied</h1>
-          <p className="text-gray-400">You don't have permission to access this area.</p>
+          <p className="text-gray-400">Your account doesn't have admin privileges.</p>
+          <p className="text-sm text-gray-500">If you believe this is an error, please contact the system administrator.</p>
           <button 
             onClick={() => window.history.back()} 
             className="mt-4 px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"

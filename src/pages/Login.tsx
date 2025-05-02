@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -62,6 +63,7 @@ const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("faculty");
+  const [adminSubmitted, setAdminSubmitted] = useState(false);
   
   // Use separate forms for login and signup
   const loginForm = useForm<LoginFormValues>({
@@ -70,6 +72,7 @@ const Login = () => {
       email: "",
       password: "",
     },
+    mode: "onSubmit", // Only validate on submit, not onChange
   });
 
   const signupForm = useForm<SignupFormValues>({
@@ -79,6 +82,7 @@ const Login = () => {
       password: "",
       department: "",
     },
+    mode: "onSubmit", // Only validate on submit, not onChange
   });
 
   const adminForm = useForm<AdminLoginFormValues>({
@@ -87,6 +91,7 @@ const Login = () => {
       email: "",
       password: "",
     },
+    mode: "onSubmit", // Only validate on submit, not onChange
   });
 
   // Redirect if already logged in
@@ -152,6 +157,8 @@ const Login = () => {
 
   async function onAdminSubmit(data: AdminLoginFormValues) {
     setIsLoading(true);
+    setAdminSubmitted(true);
+    
     try {
       await adminLogin(data.email, data.password);
     } catch (error: any) {
@@ -171,10 +178,10 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black to-gray-900 text-white flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-b from-black to-gray-900 text-white flex flex-col justify-center py-12 sm:px-6 lg:px-8 animate-fade-in">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <School className="h-12 w-12 text-blue-500" />
+          <School className="h-12 w-12 text-blue-500 animate-bounce-in" />
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-blue-600">
           Annual Report Portal
@@ -185,14 +192,17 @@ const Login = () => {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-gray-900/50 backdrop-blur-lg py-8 px-4 shadow-xl shadow-blue-500/5 sm:rounded-lg sm:px-10 border border-gray-800">
-          <Tabs defaultValue="faculty" value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <div className="bg-gray-900/50 backdrop-blur-lg py-8 px-4 shadow-xl shadow-blue-500/5 sm:rounded-lg sm:px-10 border border-gray-800 animate-scale-in">
+          <Tabs defaultValue="faculty" value={activeTab} onValueChange={(val) => {
+            setActiveTab(val);
+            setAdminSubmitted(false); // Reset admin form submission state when switching tabs
+          }} className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="faculty">
+              <TabsTrigger value="faculty" className="transition-all duration-300">
                 <Mail className="mr-2 h-4 w-4" />
                 Faculty
               </TabsTrigger>
-              <TabsTrigger value="admin">
+              <TabsTrigger value="admin" className="transition-all duration-300">
                 <ShieldCheck className="mr-2 h-4 w-4" />
                 Admin
               </TabsTrigger>
@@ -211,7 +221,7 @@ const Login = () => {
                           <FormControl>
                             <div className="relative">
                               <Mail className="absolute left-3 top-2.5 h-5 w-5 text-gray-500" />
-                              <Input placeholder="faculty@college.edu" {...field} className="pl-10 bg-gray-800/50 border-gray-700 text-white" />
+                              <Input placeholder="faculty@college.edu" {...field} className="pl-10 bg-gray-800/50 border-gray-700 text-white transition-all" />
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -228,7 +238,7 @@ const Login = () => {
                           <FormControl>
                             <div className="relative">
                               <LockKeyhole className="absolute left-3 top-2.5 h-5 w-5 text-gray-500" />
-                              <Input type="password" {...field} className="pl-10 bg-gray-800/50 border-gray-700 text-white" />
+                              <Input type="password" {...field} className="pl-10 bg-gray-800/50 border-gray-700 text-white transition-all" />
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -244,7 +254,7 @@ const Login = () => {
                           <FormLabel className="text-gray-300">Department</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
-                              <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white">
+                              <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white transition-all">
                                 <SelectValue placeholder="Select your department" />
                               </SelectTrigger>
                             </FormControl>
@@ -266,7 +276,7 @@ const Login = () => {
                       <Button
                         type="button"
                         variant="link"
-                        className="text-sm text-blue-400 hover:text-blue-300"
+                        className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
                         onClick={() => {
                           setIsSignUp(false);
                           loginForm.reset();
@@ -278,7 +288,7 @@ const Login = () => {
 
                     <Button 
                       type="submit" 
-                      className="w-full bg-blue-600 hover:bg-blue-700"
+                      className="w-full bg-blue-600 hover:bg-blue-700 transition-colors"
                       disabled={isLoading}
                     >
                       {isLoading ? (
@@ -304,7 +314,7 @@ const Login = () => {
                           <FormControl>
                             <div className="relative">
                               <Mail className="absolute left-3 top-2.5 h-5 w-5 text-gray-500" />
-                              <Input placeholder="faculty@college.edu" {...field} className="pl-10 bg-gray-800/50 border-gray-700 text-white" />
+                              <Input placeholder="faculty@college.edu" {...field} className="pl-10 bg-gray-800/50 border-gray-700 text-white transition-all" />
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -321,7 +331,7 @@ const Login = () => {
                           <FormControl>
                             <div className="relative">
                               <LockKeyhole className="absolute left-3 top-2.5 h-5 w-5 text-gray-500" />
-                              <Input type="password" {...field} className="pl-10 bg-gray-800/50 border-gray-700 text-white" />
+                              <Input type="password" {...field} className="pl-10 bg-gray-800/50 border-gray-700 text-white transition-all" />
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -333,7 +343,7 @@ const Login = () => {
                       <Button
                         type="button"
                         variant="link"
-                        className="text-sm text-blue-400 hover:text-blue-300"
+                        className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
                         onClick={() => {
                           setIsSignUp(true);
                           signupForm.reset();
@@ -345,7 +355,7 @@ const Login = () => {
 
                     <Button 
                       type="submit" 
-                      className="w-full bg-blue-600 hover:bg-blue-700"
+                      className="w-full bg-blue-600 hover:bg-blue-700 transition-colors"
                       disabled={isLoading}
                     >
                       {isLoading ? (
@@ -374,7 +384,7 @@ const Login = () => {
                         <FormControl>
                           <div className="relative">
                             <Mail className="absolute left-3 top-2.5 h-5 w-5 text-gray-500" />
-                            <Input placeholder="admin@example.com" {...field} className="pl-10 bg-gray-800/50 border-gray-700 text-white" />
+                            <Input placeholder="admin@example.com" {...field} className="pl-10 bg-gray-800/50 border-gray-700 text-white transition-all" />
                           </div>
                         </FormControl>
                         <FormMessage />
@@ -391,7 +401,7 @@ const Login = () => {
                         <FormControl>
                           <div className="relative">
                             <LockKeyhole className="absolute left-3 top-2.5 h-5 w-5 text-gray-500" />
-                            <Input type="password" {...field} className="pl-10 bg-gray-800/50 border-gray-700 text-white" />
+                            <Input type="password" {...field} className="pl-10 bg-gray-800/50 border-gray-700 text-white transition-all" />
                           </div>
                         </FormControl>
                         <FormMessage />
@@ -402,7 +412,7 @@ const Login = () => {
 
                   <Button 
                     type="submit" 
-                    className="w-full bg-purple-600 hover:bg-purple-700"
+                    className="w-full bg-purple-600 hover:bg-purple-700 transition-colors"
                     disabled={isLoading}
                   >
                     {isLoading ? (

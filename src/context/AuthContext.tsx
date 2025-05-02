@@ -37,22 +37,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log("Checking admin status for:", email);
       
-      // Using a more reliable approach with a simple query
+      // First ensure email is defined and not empty
+      if (!email || email.trim() === '') {
+        console.error('Cannot check admin status: empty email');
+        return false;
+      }
+      
+      // Using a query with better error handling
       const { data, error } = await supabase
         .from('admin_users')
         .select('email, is_active')
-        .eq('email', email);
-      
-      console.log("Admin check result:", { data, error });
+        .eq('email', email.trim().toLowerCase());
       
       if (error) {
         console.error('Error checking admin status:', error);
-        // Don't throw the error, just return false to prevent UI errors
         return false;
       }
       
       // Check if any admin user was found with this email and is active
-      return data && data.length > 0 && data[0].is_active === true;
+      const isActiveAdmin = data && data.length > 0 && data[0].is_active === true;
+      console.log("Admin check result:", { data, isActiveAdmin });
+      
+      return isActiveAdmin;
     } catch (error) {
       console.error('Error in admin check:', error);
       return false;
@@ -181,45 +187,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const adminLogin = async (email: string, password: string) => {
     setLoading(true);
     try {
-      console.log("Attempting admin login for:", email);
+      // Don't check admin status before trying to log in
+      // This causes the error to appear before the user even attempts to log in
       
-      // First check if the email is an admin
-      let isAdminUser = false;
-      
-      try {
-        // Using a more reliable approach with simpler query
-        const { data: adminData, error: adminCheckError } = await supabase
-          .from('admin_users')
-          .select('email, is_active')
-          .eq('email', email);
-        
-        console.log("Admin check result:", { adminData, adminCheckError });
-        
-        if (adminCheckError) {
-          console.warn("Non-critical admin check error:", adminCheckError);
-          // Continue the flow but with isAdminUser as false
-        } else {
-          // Check if admin exists and is active
-          isAdminUser = adminData && 
-                        adminData.length > 0 && 
-                        adminData[0].is_active === true;
-        }
-      } catch (checkError) {
-        console.error("Admin check error (caught):", checkError);
-        // Continue the flow but with isAdminUser as false
-      }
-      
-      if (!isAdminUser) {
-        toast({
-          title: "Admin access denied",
-          description: "This email is not registered as an active admin",
-          variant: "destructive",
-        });
-        setLoading(false);
-        return;
-      }
-      
-      // Try regular sign in for admin
+      // First try to sign in
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -235,17 +206,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       
-      if (data.user) {
-        // User is admin
-        setUser(data.user as User);
-        setIsAdmin(true);
+      if (!data.user) {
+        toast({
+          title: "Admin login failed",
+          description: "User account not found",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+      
+      // Now check if user is an admin AFTER successful authentication
+      const isAdminUser = await checkIfUserIsAdmin(email);
+      
+      if (!isAdminUser) {
+        // If not admin, sign out immediately and show error
+        await supabase.auth.signOut();
+        setUser(null);
+        setIsAdmin(false);
         
         toast({
-          title: "Admin login successful",
-          description: "Welcome, Admin!",
+          title: "Admin access denied",
+          description: "This email is not registered as an active admin",
+          variant: "destructive",
         });
-        navigate('/admin');
+        setLoading(false);
+        return;
       }
+      
+      // User is admin - complete the login process
+      setUser(data.user as User);
+      setIsAdmin(true);
+      
+      toast({
+        title: "Admin login successful",
+        description: "Welcome, Admin!",
+      });
+      navigate('/admin');
+      
     } catch (error: any) {
       console.error("Admin login error:", error);
       toast({
