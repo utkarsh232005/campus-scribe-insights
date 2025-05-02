@@ -12,162 +12,171 @@ import {
   School,
   PieChart,
   LogOut,
-  Shield,
-  UserCog
+  User
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { Sidebar as UISidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
+import { motion } from "framer-motion";
 
 const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, isAdmin, signOut } = useAuth();
-  const [isHovered, setIsHovered] = useState(false);
+  const { signOut, isAdmin } = useAuth();
+  const [open, setOpen] = useState(false);
+
+  const handleLogout = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    await signOut();
+  };
+
+  // Hide scrollbar with direct CSS
+  const hideScrollbarStyle = {
+    scrollbarWidth: 'none',
+    msOverflowStyle: 'none',
+  };
+
+  // Add ::-webkit-scrollbar style to document
+  React.useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      .sidebar-content::-webkit-scrollbar { 
+        display: none !important; 
+      }
+    `;
+    document.head.append(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   const menuItems = [
     {
-      title: 'Dashboard',
-      icon: Home,
-      path: '/dashboard',
-      active: location.pathname === '/dashboard',
+      label: 'Dashboard',
+      href: '/dashboard',
+      icon: <Home className="h-5 w-5 shrink-0 text-gray-400" />,
+      active: location.pathname === '/' || location.pathname === '/dashboard',
     },
     {
-      title: 'Reports',
-      icon: FileText,
-      path: '/reports',
+      label: 'Reports',
+      href: '/reports',
+      icon: <FileText className="h-5 w-5 shrink-0 text-gray-400" />,
       active: location.pathname === '/reports',
     },
     {
-      title: 'Submit Report',
-      icon: BarChart,
-      path: '/submit-report',
+      label: 'Submit Report',
+      href: '/submit-report',
+      icon: <BarChart className="h-5 w-5 shrink-0 text-gray-400" />,
       active: location.pathname === '/submit-report',
     },
     {
-      title: 'Calendar',
-      icon: Calendar,
-      path: '/calendar',
+      label: 'Calendar',
+      href: '/calendar',
+      icon: <Calendar className="h-5 w-5 shrink-0 text-gray-400" />,
       active: location.pathname === '/calendar',
     },
     {
-      title: 'Faculty',
-      icon: Users,
-      path: '/faculty',
+      label: 'Faculty',
+      href: '/faculty',
+      icon: <Users className="h-5 w-5 shrink-0 text-gray-400" />,
       active: location.pathname === '/faculty',
     },
     {
-      title: 'Awards',
-      icon: Award,
-      path: '/awards',
+      label: 'Awards',
+      href: '/awards',
+      icon: <Award className="h-5 w-5 shrink-0 text-gray-400" />,
       active: location.pathname === '/awards',
     },
     {
-      title: 'Departments',
-      icon: School,
-      path: '/departments',
+      label: 'Departments',
+      href: '/departments',
+      icon: <School className="h-5 w-5 shrink-0 text-gray-400" />,
       active: location.pathname === '/departments',
     },
     {
-      title: 'Analytics',
-      icon: PieChart,
-      path: '/analytics',
+      label: 'Analytics',
+      href: '/analytics',
+      icon: <PieChart className="h-5 w-5 shrink-0 text-gray-400" />,
       active: location.pathname === '/analytics',
     },
-  ];
-  
-  // Admin only menu items
-  const adminMenuItems = [
     {
-      title: 'Admin Dashboard',
-      icon: Shield,
-      path: '/admin',
-      active: location.pathname === '/admin',
-    },
-    {
-      title: 'User Management',
-      icon: UserCog,
-      path: '/admin/users',
-      active: location.pathname === '/admin/users',
+      label: 'Settings',
+      href: '/settings',
+      icon: <Settings className="h-5 w-5 shrink-0 text-gray-400" />,
+      active: location.pathname === '/settings',
     }
   ];
 
-  // Determine which menu items to show based on user role
-  const displayMenuItems = isAdmin 
-    ? [...menuItems, ...adminMenuItems] 
-    : menuItems;
-
-  const handleLogout = (e: React.MouseEvent) => {
-    e.preventDefault();
-    navigate('/logout');
-  };
+  const links = menuItems.map(item => ({
+    label: item.label,
+    href: item.href,
+    icon: React.cloneElement(item.icon as React.ReactElement, {
+      className: cn(
+        "h-5 w-5 shrink-0",
+        item.active ? "text-blue-400" : "text-gray-400 group-hover/sidebar:text-gray-200"
+      )
+    })
+  }));
 
   return (
-    <div 
-      className={cn(
-        "h-screen bg-gray-900 shadow-lg flex flex-col transition-all duration-300 border-r border-gray-800 relative",
-        isHovered ? "w-64" : "w-20"
-      )}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <div className={cn(
-        "p-4 flex items-center justify-between border-b border-gray-800",
-        isHovered ? "justify-between" : "justify-center"
-      )}>
-        <Link to="/dashboard" className="flex items-center">
-          <School className="text-blue-500 h-8 w-8" />
-          {isHovered && (
-            <span className="ml-2 text-xl font-bold text-white">COLLEGE REPORT</span>
-          )}
-        </Link>
-      </div>
-
-      <div className="flex-1 overflow-y-auto">
-        <div className="px-4 py-2">
-          {isHovered && <p className="text-xs font-semibold text-gray-500 mb-2">MAIN MENU</p>}
-          <nav>
-            <ul>
-              {displayMenuItems.map((item, index) => (
-                <li key={index} className="mb-1">
-                  <Link
-                    to={item.path}
-                    className={cn(
-                      "flex items-center py-3 px-3 rounded-md transition-colors",
-                      isHovered ? "justify-start" : "justify-center",
-                      item.active 
-                        ? "bg-blue-600 text-white" 
-                        : "text-gray-400 hover:bg-gray-800 hover:text-white"
-                    )}
-                  >
-                    <item.icon className={cn(
-                      "h-5 w-5",
-                      isHovered ? "mr-3" : "mr-0"
-                    )} />
-                    {isHovered && <span>{item.title}</span>}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
+    <UISidebar open={open} setOpen={setOpen}>
+      <SidebarBody className="justify-between gap-10 sidebar-content" style={hideScrollbarStyle}>
+        <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
+          {open ? <Logo /> : <LogoIcon />}
+          <div className="mt-8 flex flex-col gap-2">
+            {links.map((link, idx) => (
+              <SidebarLink 
+                key={idx} 
+                link={link}
+                className={location.pathname === link.href ? "bg-blue-500/20 text-blue-400" : ""}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+        <div className="border-t border-gray-800/40 pt-4 mt-4">
+          <SidebarLink
+            link={{
+              label: "Profile",
+              href: "/profile",
+              icon: <User className="h-5 w-5 shrink-0 text-gray-400 group-hover/sidebar:text-gray-200" />
+            }}
+            className="mb-2"
+          />
+          <SidebarLink
+            link={{
+              label: "Logout",
+              href: "#",
+              icon: <LogOut className="h-5 w-5 shrink-0 text-red-400 group-hover/sidebar:text-red-300" />
+            }}
+            onClick={handleLogout}
+            className="text-red-400 hover:bg-red-500/10"
+          />
+        </div>
+      </SidebarBody>
+    </UISidebar>
+  );
+};
 
-      <div className="p-4 border-t border-gray-800">
-        <a
-          href="#"
-          onClick={handleLogout}
-          className={cn(
-            "flex items-center py-2 px-3 rounded-md text-red-500 hover:bg-gray-800 transition-colors",
-            isHovered ? "justify-start" : "justify-center"
-          )}
-        >
-          <LogOut className={cn(
-            "h-5 w-5",
-            isHovered ? "mr-3" : "mr-0"
-          )} />
-          {isHovered && <span>Logout</span>}
-        </a>
-      </div>
-    </div>
+export const Logo = () => {
+  return (
+    <Link to="/dashboard" className="relative z-20 flex items-center space-x-2 py-3 text-sm font-normal">
+      <div className="h-6 w-6 shrink-0 rounded-md bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/20" />
+      <motion.span
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="font-medium whitespace-pre text-white text-base"
+      >
+        Campus Insights
+      </motion.span>
+    </Link>
+  );
+};
+
+export const LogoIcon = () => {
+  return (
+    <Link to="/dashboard" className="relative z-20 flex items-center justify-center space-x-2 py-3 text-sm font-normal">
+      <div className="h-6 w-6 shrink-0 rounded-md bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/20" />
+    </Link>
   );
 };
 
