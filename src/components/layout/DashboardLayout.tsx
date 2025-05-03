@@ -10,7 +10,7 @@ interface DashboardLayoutProps {
 }
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
-  const { user: authUser } = useAuth();
+  const { user: authUser, isAdmin } = useAuth();
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
   
@@ -27,7 +27,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         // First check if admin is logged in (using our custom admin authentication)
         const isAdminLoggedIn = sessionStorage.getItem('adminLoggedIn') === 'true';
         
-        if (isAdminLoggedIn) {
+        if (isAdminLoggedIn || isAdmin) {
           setUser({
             name: "Admin User",
             role: "Administrator",
@@ -41,7 +41,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         if (authUser?.email) {
           // Extract display name or use email as fallback
           const displayName = authUser.user_metadata && 'full_name' in authUser.user_metadata 
-            ? authUser.user_metadata.full_name 
+            ? String(authUser.user_metadata.full_name)
             : authUser.email?.split('@')[0] || "User";
           
           // Set user data for Header component
@@ -63,7 +63,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     };
 
     fetchUserData();
-  }, [authUser]);
+  }, [authUser, isAdmin]);
 
   if (loading) {
     return (

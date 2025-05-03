@@ -1,267 +1,262 @@
-
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { cn } from "@/lib/utils";
-import { 
-  BarChart, 
-  FileText, 
-  Calendar, 
-  Users, 
-  Settings, 
-  Home, 
-  Award,
-  School,
-  PieChart,
-  LogOut,
-  User,
-  ShieldCheck,
-  UsersRound
-} from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { Sidebar as UISidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
-import { motion } from "framer-motion";
+import {
+  LayoutDashboard,
+  Users,
+  Award,
+  FileText,
+  Calendar,
+  Settings,
+  ChevronDown,
+  ChevronRight,
+  BookOpen,
+  GraduationCap,
+  Building,
+  BarChart3,
+  ShieldCheck,
+  Menu,
+  X
+} from 'lucide-react';
+
+interface SidebarItemProps {
+  to: string;
+  icon: React.ReactNode;
+  label: string;
+  active: boolean;
+  onClick?: () => void;
+}
+
+interface SidebarSubmenuProps {
+  icon: React.ReactNode;
+  label: string;
+  active: boolean;
+  children: React.ReactNode;
+}
+
+const SidebarItem = ({ to, icon, label, active, onClick }: SidebarItemProps) => (
+  <Link
+    to={to}
+    className={`flex items-center px-3 py-2 rounded-md text-sm transition-colors ${
+      active
+        ? 'bg-gray-800 text-white font-medium'
+        : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+    }`}
+    onClick={onClick}
+  >
+    <span className="mr-3 text-lg">{icon}</span>
+    <span>{label}</span>
+  </Link>
+);
+
+const SidebarSubmenu = ({ icon, label, active, children }: SidebarSubmenuProps) => {
+  const [isOpen, setIsOpen] = useState(active);
+
+  return (
+    <div className="mb-1">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`flex items-center justify-between w-full px-3 py-2 rounded-md text-sm transition-colors ${
+          active
+            ? 'bg-gray-800 text-white font-medium'
+            : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+        }`}
+      >
+        <div className="flex items-center">
+          <span className="mr-3 text-lg">{icon}</span>
+          <span>{label}</span>
+        </div>
+        {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+      </button>
+      {isOpen && <div className="ml-6 mt-1 space-y-1">{children}</div>}
+    </div>
+  );
+};
 
 const Sidebar = () => {
   const location = useLocation();
-  const navigate = useNavigate();
-  const { signOut, isAdmin } = useAuth();
-  const [open, setOpen] = useState(false);
+  const { isAdmin } = useAuth();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
 
-  const handleLogout = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    await signOut();
-  };
-
-  // Hide scrollbar with direct CSS
-  const hideScrollbarStyle = {
-    scrollbarWidth: 'none',
-    msOverflowStyle: 'none',
-  };
-
-  // Add ::-webkit-scrollbar style to document
-  React.useEffect(() => {
-    const style = document.createElement('style');
-    style.textContent = `
-      .sidebar-content::-webkit-scrollbar { 
-        display: none !important; 
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 1024);
+      if (window.innerWidth >= 1024) {
+        setIsMobileMenuOpen(false);
       }
-    `;
-    document.head.append(style);
-    
-    return () => {
-      document.head.removeChild(style);
     };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Regular user menu items
-  const facultyMenuItems = [
-    {
-      label: 'Dashboard',
-      href: '/dashboard',
-      icon: <Home className="h-5 w-5 shrink-0 text-gray-400" />,
-      active: location.pathname === '/' || location.pathname === '/dashboard',
-    },
-    {
-      label: 'Reports',
-      href: '/reports',
-      icon: <FileText className="h-5 w-5 shrink-0 text-gray-400" />,
-      active: location.pathname === '/reports',
-    },
-    {
-      label: 'Submit Report',
-      href: '/submit-report',
-      icon: <BarChart className="h-5 w-5 shrink-0 text-gray-400" />,
-      active: location.pathname === '/submit-report',
-    },
-    {
-      label: 'Calendar',
-      href: '/calendar',
-      icon: <Calendar className="h-5 w-5 shrink-0 text-gray-400" />,
-      active: location.pathname === '/calendar',
-    },
-    {
-      label: 'Faculty',
-      href: '/faculty',
-      icon: <Users className="h-5 w-5 shrink-0 text-gray-400" />,
-      active: location.pathname === '/faculty',
-    },
-    {
-      label: 'Awards',
-      href: '/awards',
-      icon: <Award className="h-5 w-5 shrink-0 text-gray-400" />,
-      active: location.pathname === '/awards',
-    },
-    {
-      label: 'Departments',
-      href: '/departments',
-      icon: <School className="h-5 w-5 shrink-0 text-gray-400" />,
-      active: location.pathname === '/departments',
-    },
-    {
-      label: 'Analytics',
-      href: '/analytics',
-      icon: <PieChart className="h-5 w-5 shrink-0 text-gray-400" />,
-      active: location.pathname === '/analytics',
-    },
-    {
-      label: 'Settings',
-      href: '/settings',
-      icon: <Settings className="h-5 w-5 shrink-0 text-gray-400" />,
-      active: location.pathname === '/settings',
+  const closeMobileMenu = () => {
+    if (isMobile) {
+      setIsMobileMenuOpen(false);
     }
-  ];
-  
-  // Admin menu items
-  const adminMenuItems = [
-    {
-      label: 'Admin Dashboard',
-      href: '/admin',
-      icon: <ShieldCheck className="h-5 w-5 shrink-0 text-purple-400" />,
-      active: location.pathname === '/admin',
-    },
-    {
-      label: 'User Management',
-      href: '/admin/users',
-      icon: <UsersRound className="h-5 w-5 shrink-0 text-purple-400" />,
-      active: location.pathname === '/admin/users',
-    },
-    {
-      label: 'Faculty',
-      href: '/faculty',
-      icon: <Users className="h-5 w-5 shrink-0 text-gray-400" />,
-      active: location.pathname === '/faculty',
-    },
-    {
-      label: 'Awards',
-      href: '/awards',
-      icon: <Award className="h-5 w-5 shrink-0 text-gray-400" />,
-      active: location.pathname === '/awards',
-    },
-    {
-      label: 'Reports',
-      href: '/reports',
-      icon: <FileText className="h-5 w-5 shrink-0 text-gray-400" />,
-      active: location.pathname === '/reports',
-    },
-    {
-      label: 'Analytics',
-      href: '/analytics',
-      icon: <PieChart className="h-5 w-5 shrink-0 text-gray-400" />,
-      active: location.pathname === '/analytics',
-    },
-    {
-      label: 'Settings',
-      href: '/settings',
-      icon: <Settings className="h-5 w-5 shrink-0 text-gray-400" />,
-      active: location.pathname === '/settings',
-    }
-  ];
+  };
 
-  // Determine which menu items to show based on whether the user is in admin mode
-  const isAdminRoute = location.pathname.startsWith('/admin');
-  const menuItems = isAdminRoute || isAdmin ? adminMenuItems : facultyMenuItems;
-  
-  const links = menuItems.map(item => ({
-    label: item.label,
-    href: item.href,
-    icon: React.cloneElement(item.icon as React.ReactElement, {
-      className: cn(
-        "h-5 w-5 shrink-0",
-        item.active ? 
-          (isAdminRoute ? "text-purple-400" : "text-blue-400") :
-          "text-gray-400 group-hover/sidebar:text-gray-200"
-      )
-    })
-  }));
+  const isActive = (path: string) => {
+    return location.pathname === path;
+  };
+
+  const isActiveGroup = (paths: string[]) => {
+    return paths.some(path => location.pathname.startsWith(path));
+  };
 
   return (
-    <UISidebar open={open} setOpen={setOpen}>
-      <SidebarBody className="justify-between gap-10 sidebar-content" style={hideScrollbarStyle}>
-        <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
-          {open ? <Logo isAdmin={isAdminRoute} /> : <LogoIcon isAdmin={isAdminRoute} />}
-          
-          {isAdminRoute && (
-            <div className="mt-2 px-3">
-              <div className={cn(
-                "text-xs font-semibold uppercase tracking-wider py-2 px-2 rounded-md bg-purple-900/20 text-purple-400 border border-purple-800/30",
-              )}>
-                Admin Area
-              </div>
-            </div>
-          )}
-          
-          <div className="mt-8 flex flex-col gap-2">
-            {links.map((link, idx) => (
-              <SidebarLink 
-                key={idx} 
-                link={link}
-                className={location.pathname === link.href ? 
-                  (isAdminRoute ? "bg-purple-500/20 text-purple-400" : "bg-blue-500/20 text-blue-400") : 
-                  ""}
-              />
-            ))}
-          </div>
-        </div>
-        <div className="border-t border-gray-800/40 pt-4 mt-4">
-          <SidebarLink
-            link={{
-              label: "Profile",
-              href: "/profile",
-              icon: <User className="h-5 w-5 shrink-0 text-gray-400 group-hover/sidebar:text-gray-200" />
-            }}
-            className={location.pathname === '/profile' ? 
-              (isAdminRoute ? "bg-purple-500/20 text-purple-400" : "bg-blue-500/20 text-blue-400") : 
-              "mb-2"}
-          />
-          <SidebarLink
-            link={{
-              label: "Logout",
-              href: "#",
-              icon: <LogOut className="h-5 w-5 shrink-0 text-red-400 group-hover/sidebar:text-red-300" />
-            }}
-            onClick={handleLogout}
-            className="text-red-400 hover:bg-red-500/10"
-          />
-        </div>
-      </SidebarBody>
-    </UISidebar>
-  );
-};
+    <>
+      {/* Mobile menu button */}
+      {isMobile && (
+        <button
+          className="fixed bottom-4 right-4 z-50 bg-blue-600 text-white p-3 rounded-full shadow-lg"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      )}
 
-interface LogoProps {
-  isAdmin?: boolean;
-}
-
-export const Logo: React.FC<LogoProps> = ({ isAdmin = false }) => {
-  return (
-    <Link to={isAdmin ? "/admin" : "/dashboard"} className="relative z-20 flex items-center space-x-2 py-3 text-sm font-normal">
-      <div className={cn(
-        "h-6 w-6 shrink-0 rounded-md shadow-lg",
-        isAdmin ? 
-          "bg-gradient-to-br from-purple-500 to-purple-600 shadow-purple-500/20" : 
-          "bg-gradient-to-br from-blue-500 to-blue-600 shadow-blue-500/20"
-      )} />
-      <motion.span
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="font-medium whitespace-pre text-white text-base"
+      {/* Sidebar */}
+      <div
+        className={`${
+          isMobile
+            ? `fixed inset-y-0 left-0 z-40 w-64 transform transition-transform duration-300 ease-in-out ${
+                isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+              }`
+            : 'w-64 min-w-64'
+        } bg-gray-900 border-r border-gray-800 overflow-y-auto sidebar-scrollbar`}
       >
-        Campus Insights {isAdmin && <span className="text-xs text-purple-300">(Admin)</span>}
-      </motion.span>
-    </Link>
-  );
-};
+        <div className="p-4">
+          <div className="flex items-center mb-8">
+            <GraduationCap className="h-8 w-8 text-blue-500" />
+            <h1 className="ml-2 text-xl font-bold text-white">Faculty Portal</h1>
+          </div>
 
-export const LogoIcon: React.FC<LogoProps> = ({ isAdmin = false }) => {
-  return (
-    <Link to={isAdmin ? "/admin" : "/dashboard"} className="relative z-20 flex items-center justify-center space-x-2 py-3 text-sm font-normal">
-      <div className={cn(
-        "h-6 w-6 shrink-0 rounded-md shadow-lg",
-        isAdmin ? 
-          "bg-gradient-to-br from-purple-500 to-purple-600 shadow-purple-500/20" : 
-          "bg-gradient-to-br from-blue-500 to-blue-600 shadow-blue-500/20"
-      )} />
-    </Link>
+          <nav className="space-y-1">
+            <SidebarItem
+              to="/"
+              icon={<LayoutDashboard />}
+              label="Dashboard"
+              active={isActive('/')}
+              onClick={closeMobileMenu}
+            />
+
+            <SidebarItem
+              to="/faculty"
+              icon={<Users />}
+              label="Faculty"
+              active={isActive('/faculty')}
+              onClick={closeMobileMenu}
+            />
+
+            <SidebarItem
+              to="/awards"
+              icon={<Award />}
+              label="Awards"
+              active={isActive('/awards')}
+              onClick={closeMobileMenu}
+            />
+
+            <SidebarItem
+              to="/reports"
+              icon={<FileText />}
+              label="Reports"
+              active={isActive('/reports')}
+              onClick={closeMobileMenu}
+            />
+
+            <SidebarItem
+              to="/events"
+              icon={<Calendar />}
+              label="Events"
+              active={isActive('/events')}
+              onClick={closeMobileMenu}
+            />
+
+            <SidebarSubmenu
+              icon={<BookOpen />}
+              label="Academics"
+              active={isActiveGroup(['/courses', '/programs', '/research'])}
+            >
+              <SidebarItem
+                to="/courses"
+                icon={<ChevronRight size={16} />}
+                label="Courses"
+                active={isActive('/courses')}
+                onClick={closeMobileMenu}
+              />
+              <SidebarItem
+                to="/programs"
+                icon={<ChevronRight size={16} />}
+                label="Programs"
+                active={isActive('/programs')}
+                onClick={closeMobileMenu}
+              />
+              <SidebarItem
+                to="/research"
+                icon={<ChevronRight size={16} />}
+                label="Research"
+                active={isActive('/research')}
+                onClick={closeMobileMenu}
+              />
+            </SidebarSubmenu>
+
+            <SidebarItem
+              to="/departments"
+              icon={<Building />}
+              label="Departments"
+              active={isActive('/departments')}
+              onClick={closeMobileMenu}
+            />
+
+            {isAdmin && (
+              <>
+                <div className="pt-4 pb-2">
+                  <div className="px-3">
+                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Admin
+                    </h3>
+                  </div>
+                </div>
+
+                <SidebarItem
+                  to="/admin/dashboard"
+                  icon={<BarChart3 />}
+                  label="Admin Dashboard"
+                  active={isActive('/admin/dashboard')}
+                  onClick={closeMobileMenu}
+                />
+
+                <SidebarItem
+                  to="/admin/users"
+                  icon={<ShieldCheck />}
+                  label="User Management"
+                  active={isActive('/admin/users')}
+                  onClick={closeMobileMenu}
+                />
+
+                <SidebarItem
+                  to="/admin/settings"
+                  icon={<Settings />}
+                  label="System Settings"
+                  active={isActive('/admin/settings')}
+                  onClick={closeMobileMenu}
+                />
+              </>
+            )}
+          </nav>
+        </div>
+      </div>
+
+      {/* Overlay for mobile */}
+      {isMobile && isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-30"
+          onClick={closeMobileMenu}
+        />
+      )}
+    </>
   );
 };
 
