@@ -1,3 +1,4 @@
+
 "use client";
 import { cn } from "@/lib/utils";
 import React, { useState, createContext, useContext } from "react";
@@ -70,11 +71,11 @@ export const Sidebar = ({
   );
 };
 
-export const SidebarBody = (props: React.ComponentProps<typeof motion.div>) => {
+export const SidebarBody = (props: React.ComponentProps<"div">) => {
   return (
     <>
       <DesktopSidebar {...props} />
-      <MobileSidebar {...(props as React.ComponentProps<"div">)} />
+      <MobileSidebar {...props} />
     </>
   );
 };
@@ -83,12 +84,15 @@ export const DesktopSidebar = ({
   className,
   children,
   ...props
-}: React.ComponentProps<typeof motion.div>) => {
+}: React.ComponentProps<"div">) => {
   const { open, setOpen, animate } = useSidebar();
   
   // Create a styled content wrapper to properly hide scrollbars
   const ContentWrapper = ({ children }: { children: React.ReactNode }) => (
-    <div className="h-full w-full overflow-y-auto hide-scrollbar">
+    <div className="h-full w-full overflow-y-auto" style={{
+      scrollbarWidth: "none",
+      msOverflowStyle: "none"
+    }}>
       {children}
     </div>
   );
@@ -105,7 +109,7 @@ export const DesktopSidebar = ({
         }}
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
-        {...props}
+        {...props as any}
       >
         <ContentWrapper>
           {children}
@@ -168,10 +172,12 @@ export const MobileSidebar = ({
 export const SidebarLink = ({
   link,
   className,
+  onClick,
   ...props
 }: {
   link: Links;
   className?: string;
+  onClick?: (e: React.MouseEvent) => void;
 }) => {
   const { open, animate } = useSidebar();
   
@@ -182,6 +188,7 @@ export const SidebarLink = ({
         "flex items-center justify-start gap-2 group/sidebar py-2 px-2 rounded-md transition-all duration-200 hover:bg-blue-500/10",
         className
       )}
+      onClick={onClick}
       {...props}
     >
       {link.icon}

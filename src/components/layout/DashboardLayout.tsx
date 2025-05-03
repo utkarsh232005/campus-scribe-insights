@@ -40,15 +40,19 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         // Get user data from Supabase if not admin
         if (authUser?.email) {
           // Extract display name or use email as fallback
-          const displayName = authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || "User";
+          const displayName = authUser.user_metadata && 'full_name' in authUser.user_metadata 
+            ? authUser.user_metadata.full_name 
+            : authUser.email?.split('@')[0] || "User";
           
           // Set user data for Header component
           setUser({
             name: displayName,
-            role: authUser.user_metadata?.department ? 
-              authUser.user_metadata.department.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 
-              "Faculty Member",
-            avatar: authUser.user_metadata?.avatar_url || "/placeholder.svg"
+            role: authUser.user_metadata && 'department' in authUser.user_metadata 
+              ? String(authUser.user_metadata.department).replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+              : "Faculty Member",
+            avatar: authUser.user_metadata && 'avatar_url' in authUser.user_metadata 
+              ? String(authUser.user_metadata.avatar_url)
+              : "/placeholder.svg"
           });
         }
       } catch (error) {
@@ -72,7 +76,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   return (
     <div className={`flex h-screen bg-gradient-to-b ${isAdminRoute ? 'from-gray-900 to-purple-950/20' : 'from-gray-900 to-gray-950'}`}>
       <div className="flex flex-col flex-1 overflow-hidden">
-        <Header user={user} isAdmin={isAdminRoute} />
+        <Header user={user} />
         <div className="flex flex-1 overflow-hidden">
           <Sidebar />
           <main className="flex-1 overflow-x-hidden overflow-y-auto p-6">

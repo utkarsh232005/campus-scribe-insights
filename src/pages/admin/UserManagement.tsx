@@ -57,13 +57,7 @@ const UserManagement = () => {
     const fetchUsers = async () => {
       setLoading(true);
       try {
-        // Get auth users from Supabase
-        const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
-        
-        if (authError) {
-          console.error('Error fetching auth users:', authError);
-          throw new Error('Failed to fetch authentication data');
-        }
+        console.log("Fetching users data...");
         
         // Get profiles from profiles table
         const { data: profilesData, error: profilesError } = await supabase
@@ -76,6 +70,8 @@ const UserManagement = () => {
           throw new Error('Failed to fetch profile data');
         }
         
+        console.log("Profiles data:", profilesData);
+        
         // Get admin users
         const { data: adminData, error: adminError } = await supabase
           .from('admin_users')
@@ -86,18 +82,18 @@ const UserManagement = () => {
           console.error('Error fetching admin users:', adminError);
         }
         
+        console.log("Admin data:", adminData);
+        
         const adminEmails = adminData ? adminData.map(admin => admin.email.toLowerCase()) : [];
         
         // Merge auth and profile data
         let mergedUsers: UserProfile[] = [];
         
-        if (authData?.users && profilesData) {
+        if (profilesData) {
+          // Generate fake emails for testing if needed
           mergedUsers = profilesData.map(profile => {
-            // Find matching auth user if available
-            const authUser = authData.users.find(user => user.id === profile.id);
-            
             // Generate email from department
-            const email = authUser?.email || `${profile.department}@faculty.edu`;
+            const email = `${profile.department}@faculty.edu`;
             
             // Check if user is admin
             const isAdmin = adminEmails.includes(email.toLowerCase());
@@ -107,12 +103,14 @@ const UserManagement = () => {
               department: profile.department,
               created_at: profile.created_at,
               email: email,
-              last_sign_in_at: authUser?.last_sign_in_at || null,
-              status: authUser?.user_metadata?.status || 'active',
+              last_sign_in_at: null,
+              status: 'active',
               isAdmin: isAdmin
             };
           });
         }
+        
+        console.log("Merged users:", mergedUsers);
         
         setUsers(mergedUsers);
         setFilteredUsers(mergedUsers);

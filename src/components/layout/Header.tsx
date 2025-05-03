@@ -20,9 +20,10 @@ interface HeaderProps {
     role: string;
     avatar?: string;
   };
+  isAdmin?: boolean;
 }
 
-const Header = ({ user }: HeaderProps) => {
+const Header = ({ user, isAdmin = false }: HeaderProps) => {
   const { notifications } = useNotifications();
   const [showNotifications, setShowNotifications] = useState(false);
   const navigate = useNavigate();
@@ -54,7 +55,7 @@ const Header = ({ user }: HeaderProps) => {
                   <div>
                     <p>{notification.message}</p>
                     <p className="text-xs text-gray-400">
-                      {new Date(notification.created_at).toLocaleString()}
+                      {new Date(notification.created_at || '').toLocaleString()}
                     </p>
                   </div>
                 </DropdownMenuItem>
