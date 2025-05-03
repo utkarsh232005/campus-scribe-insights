@@ -1,7 +1,9 @@
+
 import React, { useEffect, useState } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { useAuth } from '@/context/AuthContext';
+import { useLocation } from 'react-router-dom';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -9,6 +11,9 @@ interface DashboardLayoutProps {
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { user: authUser } = useAuth();
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith('/admin');
+  
   const [user, setUser] = useState({
     name: "",
     role: "",
@@ -65,13 +70,15 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   }
 
   return (
-    <div className="flex h-screen bg-gradient-to-b from-gray-900 to-gray-950">
+    <div className={`flex h-screen bg-gradient-to-b ${isAdminRoute ? 'from-gray-900 to-purple-950/20' : 'from-gray-900 to-gray-950'}`}>
       <div className="flex flex-col flex-1 overflow-hidden">
-        <Header user={user} />
+        <Header user={user} isAdmin={isAdminRoute} />
         <div className="flex flex-1 overflow-hidden">
           <Sidebar />
           <main className="flex-1 overflow-x-hidden overflow-y-auto p-6">
-            <div className="bg-gray-900/30 backdrop-blur-sm rounded-xl border border-gray-800/30 shadow-lg p-6">
+            <div className={`backdrop-blur-sm rounded-xl border shadow-lg p-6 ${
+              isAdminRoute ? 'bg-purple-900/5 border-purple-800/30' : 'bg-gray-900/30 border-gray-800/30'
+            }`}>
               {children}
             </div>
           </main>

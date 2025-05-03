@@ -1,9 +1,31 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Award, ArrowRight, Calendar } from 'lucide-react';
+import { Award, ArrowRight, Calendar, Plus, Save, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/use-toast';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { 
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
+import { useAuth } from '@/context/AuthContext';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 
 interface AwardItem {
@@ -13,6 +35,15 @@ interface AwardItem {
   recipient: string;
   year: number;
   description?: string;
+  award_type: string;
+}
+
+interface AwardFormData {
+  title: string;
+  department: string;
+  recipient: string;
+  year: number;
+  description: string;
   award_type: string;
 }
 
@@ -27,43 +58,161 @@ const DepartmentColors: Record<string, string> = {
 const AwardsPage = () => {
   const [awardsByDepartment, setAwardsByDepartment] = useState<Record<string, AwardItem[]>>({});
   const [loading, setLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [formData, setFormData] = useState<AwardFormData>({
+    title: '',
+    department: '',
+    recipient: '',
+    year: new Date().getFullYear(),
+    description: '',
+    award_type: ''
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const { isAdmin } = useAuth();
+  const { toast } = useToast();
+  
+  const departments = [
+    'computer_science',
+    'mathematics',
+    'physics',
+    'electrical_engineering',
+    'mechanical_engineering'
+  ];
+  
+  const awardTypes = [
+    'Teaching Excellence',
+    'Research Achievement',
+    'Service Award',
+    'Innovation',
+    'Leadership',
+    'Mentorship',
+    'Lifetime Achievement'
+  ];
 
   useEffect(() => {
-    const fetchAwards = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('awards')
-        .select('*')
-        .order('year', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching awards:', error);
-        setLoading(false);
-        return;
-      }
-
-      const groupedAwards = data.reduce((acc, award) => {
-        if (!acc[award.department]) {
-          acc[award.department] = [];
-        }
-        acc[award.department].push(award);
-        return acc;
-      }, {} as Record<string, AwardItem[]>);
-
-      setAwardsByDepartment(groupedAwards);
-      setLoading(false);
-    };
-
     fetchAwards();
   }, []);
+  
+  const fetchAwards = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('awards')
+      .select('*')
+      .order('year', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching awards:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load awards data",
+        variant: "destructive"
+      });
+      setLoading(false);
+      return;
+    }
+
+    const groupedAwards = data.reduce((acc, award) => {
+      if (!acc[award.department]) {
+        acc[award.department] = [];
+      }
+      acc[award.department].push(award);
+      return acc;
+    }, {} as Record<string, AwardItem[]>);
+
+    setAwardsByDepartment(groupedAwards);
+    setLoading(false);
+  };
+  
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: name === 'year' ? parseInt(value, 10) : value
+    }));
+  };
+  
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+  
+  const handleAddAward = async () => {
+    // Validate form data
+    if (!formData.title || !formData.department || !formData.recipient || !formData.award_type) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setSubmitting(true);
+    try {
+      const { data, error } = await supabase
+        .from('awards')
+        .insert([{
+          title: formData.title,
+          department: formData.department,
+          recipient: formData.recipient,
+          year: formData.year,
+          description: formData.description,
+          award_type: formData.award_type
+        }]);
+        
+      if (error) throw error;
+      
+      // Reset form and close dialog
+      setFormData({
+        title: '',
+        department: '',
+        recipient: '',
+        year: new Date().getFullYear(),
+        description: '',
+        award_type: ''
+      });
+      
+      setIsDialogOpen(false);
+      toast({
+        title: "Success",
+        description: "Award added successfully!",
+      });
+      
+      // Refresh awards list
+      fetchAwards();
+    } catch (error) {
+      console.error('Error adding award:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add the award",
+        variant: "destructive"
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <DashboardLayout>
       <div className="p-6">
-        <h1 className="text-4xl font-bold text-white mb-8 animate-fade-in flex items-center">
-          <Award className="h-8 w-8 mr-3 text-yellow-400" />
-          Departmental Awards & Recognitions
-        </h1>
+        <div className="flex justify-between items-center mb-8 animate-fade-in">
+          <h1 className="text-4xl font-bold text-white flex items-center">
+            <Award className="h-8 w-8 mr-3 text-yellow-400" />
+            Departmental Awards & Recognitions
+          </h1>
+          
+          {isAdmin && (
+            <Button 
+              className="bg-yellow-600 hover:bg-yellow-700 text-white flex items-center gap-2" 
+              onClick={() => setIsDialogOpen(true)}
+            >
+              <Plus className="h-4 w-4" />
+              Add Award
+            </Button>
+          )}
+        </div>
 
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -119,6 +268,139 @@ const AwardsPage = () => {
           ))
         )}
       </div>
+      
+      {/* Add Award Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="bg-gray-900 border border-gray-800">
+          <DialogHeader>
+            <DialogTitle className="text-xl text-white flex items-center">
+              <Award className="h-5 w-5 mr-2 text-yellow-400" />
+              Add New Award
+            </DialogTitle>
+            <DialogDescription>
+              Enter the details for the new award or recognition.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <label htmlFor="title" className="text-sm text-gray-400">Title <span className="text-red-500">*</span></label>
+              <Input
+                id="title"
+                name="title"
+                placeholder="Award Title"
+                value={formData.title}
+                onChange={handleInputChange}
+                className="bg-gray-800 border-gray-700"
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <label htmlFor="department" className="text-sm text-gray-400">Department <span className="text-red-500">*</span></label>
+              <Select
+                value={formData.department}
+                onValueChange={(value) => handleSelectChange('department', value)}
+              >
+                <SelectTrigger className="bg-gray-800 border-gray-700">
+                  <SelectValue placeholder="Select Department" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-700">
+                  <SelectGroup>
+                    <SelectLabel>Departments</SelectLabel>
+                    {departments.map((dept) => (
+                      <SelectItem key={dept} value={dept} className="cursor-pointer">
+                        {dept.replace(/_/g, ' ')}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="grid gap-2">
+              <label htmlFor="recipient" className="text-sm text-gray-400">Recipient <span className="text-red-500">*</span></label>
+              <Input
+                id="recipient"
+                name="recipient"
+                placeholder="Award Recipient"
+                value={formData.recipient}
+                onChange={handleInputChange}
+                className="bg-gray-800 border-gray-700"
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <label htmlFor="year" className="text-sm text-gray-400">Year <span className="text-red-500">*</span></label>
+              <Input
+                id="year"
+                name="year"
+                type="number"
+                placeholder="Award Year"
+                value={formData.year}
+                onChange={handleInputChange}
+                className="bg-gray-800 border-gray-700"
+                min={1900}
+                max={2100}
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <label htmlFor="award_type" className="text-sm text-gray-400">Award Type <span className="text-red-500">*</span></label>
+              <Select
+                value={formData.award_type}
+                onValueChange={(value) => handleSelectChange('award_type', value)}
+              >
+                <SelectTrigger className="bg-gray-800 border-gray-700">
+                  <SelectValue placeholder="Select Award Type" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-700">
+                  <SelectGroup>
+                    <SelectLabel>Type</SelectLabel>
+                    {awardTypes.map((type) => (
+                      <SelectItem key={type} value={type} className="cursor-pointer">
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="grid gap-2">
+              <label htmlFor="description" className="text-sm text-gray-400">Description</label>
+              <Textarea
+                id="description"
+                name="description"
+                placeholder="Award Description"
+                value={formData.description}
+                onChange={handleInputChange}
+                className="bg-gray-800 border-gray-700"
+                rows={3}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={submitting}>
+              <X className="h-4 w-4 mr-2" />
+              Cancel
+            </Button>
+            <Button onClick={handleAddAward} className="bg-yellow-600 hover:bg-yellow-700" disabled={submitting}>
+              {submitting ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2"></div>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Award
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       
       <style>
         {`

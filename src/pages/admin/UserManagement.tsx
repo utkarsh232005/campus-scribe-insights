@@ -30,7 +30,8 @@ import {
   UserCog,
   Filter,
   RefreshCw,
-  Mail
+  Mail,
+  Shield
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -41,6 +42,7 @@ interface UserProfile {
   email?: string;
   last_sign_in_at?: string;
   status?: string;
+  isAdmin?: boolean;
 }
 
 const UserManagement = () => {
@@ -55,29 +57,65 @@ const UserManagement = () => {
     const fetchUsers = async () => {
       setLoading(true);
       try {
-        // Fetch profiles
-        const { data, error } = await supabase
+        // Get auth users from Supabase
+        const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
+        
+        if (authError) {
+          console.error('Error fetching auth users:', authError);
+          throw new Error('Failed to fetch authentication data');
+        }
+        
+        // Get profiles from profiles table
+        const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
           .select('*')
           .order('created_at', { ascending: false });
         
-        if (error) throw error;
-        
-        if (data) {
-          // In a real app, you'd join with auth data or use an edge function
-          // For demo purposes, we'll simulate some user status
-          const usersWithStatus = data.map(user => ({
-            ...user,
-            email: `${user.department}@example.com`, // Simulated email
-            status: Math.random() > 0.3 ? 'active' : 'inactive', // Random status
-            last_sign_in_at: new Date(
-              Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000)
-            ).toISOString() // Random last sign in date within 30 days
-          }));
-          
-          setUsers(usersWithStatus);
-          setFilteredUsers(usersWithStatus);
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+          throw new Error('Failed to fetch profile data');
         }
+        
+        // Get admin users
+        const { data: adminData, error: adminError } = await supabase
+          .from('admin_users')
+          .select('email')
+          .eq('is_active', true);
+        
+        if (adminError) {
+          console.error('Error fetching admin users:', adminError);
+        }
+        
+        const adminEmails = adminData ? adminData.map(admin => admin.email.toLowerCase()) : [];
+        
+        // Merge auth and profile data
+        let mergedUsers: UserProfile[] = [];
+        
+        if (authData?.users && profilesData) {
+          mergedUsers = profilesData.map(profile => {
+            // Find matching auth user if available
+            const authUser = authData.users.find(user => user.id === profile.id);
+            
+            // Generate email from department
+            const email = authUser?.email || `${profile.department}@faculty.edu`;
+            
+            // Check if user is admin
+            const isAdmin = adminEmails.includes(email.toLowerCase());
+            
+            return {
+              id: profile.id,
+              department: profile.department,
+              created_at: profile.created_at,
+              email: email,
+              last_sign_in_at: authUser?.last_sign_in_at || null,
+              status: authUser?.user_metadata?.status || 'active',
+              isAdmin: isAdmin
+            };
+          });
+        }
+        
+        setUsers(mergedUsers);
+        setFilteredUsers(mergedUsers);
       } catch (error) {
         console.error('Error fetching users:', error);
         toast({
@@ -155,7 +193,7 @@ const UserManagement = () => {
       <div className="p-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-white">User Management</h1>
+            <h1 className="text-3xl font-bold text-white animate-fade-in">User Management</h1>
             <p className="text-gray-400">Manage faculty members and their permissions</p>
           </div>
           
@@ -224,15 +262,15 @@ const UserManagement = () => {
                       <TableHead>User</TableHead>
                       <TableHead>Department</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Role</TableHead>
                       <TableHead>Created</TableHead>
-                      <TableHead>Last Login</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredUsers.length > 0 ? (
                       filteredUsers.map((user) => (
-                        <TableRow key={user.id}>
+                        <TableRow key={user.id} className="animate-slide-in">
                           <TableCell>
                             <div className="flex items-center">
                               <div className="h-9 w-9 rounded-full bg-gray-800 flex items-center justify-center mr-3">
@@ -266,13 +304,19 @@ const UserManagement = () => {
                             )}
                           </TableCell>
                           <TableCell>
-                            {format(new Date(user.created_at), 'MMM d, yyyy')}
+                            {user.isAdmin ? (
+                              <Badge className="bg-purple-900/30 text-purple-300 border-purple-800/30">
+                                <Shield className="h-3 w-3 mr-1" />
+                                Admin
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-blue-900/30 text-blue-300 border-blue-800/30">
+                                Faculty
+                              </Badge>
+                            )}
                           </TableCell>
                           <TableCell>
-                            {user.last_sign_in_at ? 
-                              format(new Date(user.last_sign_in_at), 'MMM d, yyyy') :
-                              'Never'
-                            }
+                            {format(new Date(user.created_at), 'MMM d, yyyy')}
                           </TableCell>
                           <TableCell className="text-right">
                             <DropdownMenu>
@@ -319,6 +363,34 @@ const UserManagement = () => {
           </CardContent>
         </Card>
       </div>
+
+      <style>
+        {`
+          @keyframes slideIn {
+            from {
+              opacity: 0;
+              transform: translateY(10px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          
+          .animate-slide-in {
+            animation: slideIn 0.3s ease forwards;
+          }
+          
+          .animate-fade-in {
+            animation: fadeIn 0.6s ease-in-out;
+          }
+          
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+        `}
+      </style>
     </DashboardLayout>
   );
 };
