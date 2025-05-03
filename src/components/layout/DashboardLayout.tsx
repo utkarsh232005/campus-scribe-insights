@@ -75,10 +75,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   return (
     <div className={`flex h-screen bg-gradient-to-b ${isAdminRoute ? 'from-gray-900 to-purple-950/20' : 'from-gray-900 to-gray-950'}`}>
+      <Sidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
         <Header user={user} />
         <div className="flex flex-1 overflow-hidden">
-          <Sidebar />
           <main className="flex-1 overflow-x-hidden overflow-y-auto p-6">
             <div className={`backdrop-blur-sm rounded-xl border shadow-lg p-6 ${
               isAdminRoute ? 'bg-purple-900/5 border-purple-800/30' : 'bg-gray-900/30 border-gray-800/30'

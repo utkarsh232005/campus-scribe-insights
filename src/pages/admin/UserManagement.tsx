@@ -35,16 +35,7 @@ import {
   Shield
 } from 'lucide-react';
 import { format } from 'date-fns';
-
-interface UserProfile {
-  id: string;
-  department: string;
-  created_at: string;
-  email?: string;
-  last_sign_in_at?: string | null;
-  status?: string;
-  isAdmin?: boolean;
-}
+import { UserProfile } from '@/types/user';
 
 const UserManagement = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -61,15 +52,7 @@ const UserManagement = () => {
       try {
         console.log("Fetching users data...");
         
-        // Get auth users from auth.users table via built-in RPC
-        const { data: authUsersData, error: authUsersError } = await supabase.auth.admin.listUsers();
-        
-        if (authUsersError) {
-          console.error('Error fetching auth users:', authUsersError);
-          throw new Error('Failed to fetch user data');
-        }
-        
-        // Get profiles from profiles table
+        // Get profiles from profiles table directly since we can't access auth.users
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
           .select('*')
@@ -93,33 +76,29 @@ const UserManagement = () => {
         const adminEmails = adminData ? adminData.map(admin => admin.email.toLowerCase()) : [];
         console.log("Admin emails:", adminEmails);
         
-        // Merge auth and profile data
-        let mergedUsers: UserProfile[] = [];
+        // Map profile data to display format
+        let userProfiles: UserProfile[] = [];
         
-        if (authUsersData?.users) {
-          mergedUsers = authUsersData.users.map(authUser => {
-            // Find matching profile if exists
-            const profile = profilesData?.find(p => p.id === authUser.id);
-            
+        if (profilesData) {
+          userProfiles = profilesData.map(profile => {
             // Check if user is admin
-            const isAdmin = authUser.email ? adminEmails.includes(authUser.email.toLowerCase()) : false;
+            const isAdmin = false; // We can't check this easily without the email
             
             return {
-              id: authUser.id,
-              department: profile?.department || authUser.user_metadata?.department || 'unknown',
-              email: authUser.email || 'No email',
-              created_at: authUser.created_at,
-              last_sign_in_at: authUser.last_sign_in_at,
-              status: authUser.banned ? 'inactive' : 'active',
+              id: profile.id,
+              department: profile.department || 'unknown',
+              email: '', // We don't have this from the profiles table
+              created_at: profile.created_at,
+              last_sign_in_at: null,
               isAdmin: isAdmin
             };
           });
         }
         
-        console.log("Merged users:", mergedUsers);
+        console.log("User profiles:", userProfiles);
         
-        setUsers(mergedUsers);
-        setFilteredUsers(mergedUsers);
+        setUsers(userProfiles);
+        setFilteredUsers(userProfiles);
       } catch (error) {
         console.error('Error fetching users:', error);
         toast({
@@ -160,24 +139,7 @@ const UserManagement = () => {
 
   const handleUserAction = async (userId: string, action: 'activate' | 'deactivate') => {
     try {
-      // Update the user in Supabase Auth
-      if (action === 'deactivate') {
-        const { error } = await supabase.auth.admin.updateUserById(
-          userId,
-          { ban_duration: '999999h' } // Effectively permanent
-        );
-        
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.auth.admin.updateUserById(
-          userId,
-          { ban_duration: null }
-        );
-        
-        if (error) throw error;
-      }
-      
-      // Update local state
+      // Update local state only since we can't directly modify auth.users
       setUsers(users.map(user => 
         user.id === userId 
           ? { ...user, status: action === 'activate' ? 'active' : 'inactive' } 
@@ -284,10 +246,8 @@ const UserManagement = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>User</TableHead>
+                      <TableHead>User ID</TableHead>
                       <TableHead>Department</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Role</TableHead>
                       <TableHead>Created</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -299,13 +259,13 @@ const UserManagement = () => {
                           <TableCell>
                             <div className="flex items-center">
                               <div className="h-9 w-9 rounded-full bg-gray-800 flex items-center justify-center mr-3">
-                                <span className="text-xs font-bold">{user.email?.[0]?.toUpperCase() || '?'}</span>
+                                <span className="text-xs font-bold">U</span>
                               </div>
                               <div>
-                                <div className="font-medium text-sm">{user.email}</div>
+                                <div className="font-medium text-sm">{user.id.substring(0, 8)}...</div>
                                 <div className="text-xs text-gray-500 flex items-center">
                                   <Mail className="h-3 w-3 mr-1" />
-                                  ID: {user.id.substring(0, 8)}...
+                                  ID: {user.id}
                                 </div>
                               </div>
                             </div>
@@ -314,31 +274,6 @@ const UserManagement = () => {
                             <Badge className="bg-gray-800 text-gray-300 hover:bg-gray-700">
                               {user.department?.replace(/_/g, ' ') || 'Not set'}
                             </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {user.status === 'active' ? (
-                              <Badge className="bg-green-900/30 text-green-500 border-green-800/30">
-                                <UserCheck className="h-3 w-3 mr-1" />
-                                Active
-                              </Badge>
-                            ) : (
-                              <Badge className="bg-red-900/30 text-red-500 border-red-800/30">
-                                <UserX className="h-3 w-3 mr-1" />
-                                Inactive
-                              </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {user.isAdmin ? (
-                              <Badge className="bg-purple-900/30 text-purple-300 border-purple-800/30">
-                                <Shield className="h-3 w-3 mr-1" />
-                                Admin
-                              </Badge>
-                            ) : (
-                              <Badge className="bg-blue-900/30 text-blue-300 border-blue-800/30">
-                                Faculty
-                              </Badge>
-                            )}
                           </TableCell>
                           <TableCell>
                             {user.created_at ? format(new Date(user.created_at), 'MMM d, yyyy') : 'N/A'}
@@ -355,7 +290,6 @@ const UserManagement = () => {
                                 <DropdownMenuItem 
                                   className="text-green-500 focus:text-green-500"
                                   onClick={() => handleUserAction(user.id, 'activate')}
-                                  disabled={user.status === 'active'}
                                 >
                                   <UserCheck className="h-4 w-4 mr-2" />
                                   Activate User
@@ -363,7 +297,6 @@ const UserManagement = () => {
                                 <DropdownMenuItem 
                                   className="text-red-500 focus:text-red-500"
                                   onClick={() => handleUserAction(user.id, 'deactivate')}
-                                  disabled={user.status === 'inactive'}
                                 >
                                   <UserX className="h-4 w-4 mr-2" />
                                   Deactivate User
@@ -375,7 +308,7 @@ const UserManagement = () => {
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-gray-400">
+                        <TableCell colSpan={4} className="text-center py-8 text-gray-400">
                           <Info className="h-5 w-5 mx-auto mb-2" />
                           No users found matching your criteria
                         </TableCell>

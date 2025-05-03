@@ -78,7 +78,7 @@ const Profile = () => {
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-500">Account Created</label>
                 <p className="text-lg bg-gray-900/50 p-2 rounded-md border border-gray-800">
-                  {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
+                  {user?.app_metadata?.created_at ? new Date(user.app_metadata.created_at).toLocaleDateString() : 'N/A'}
                 </p>
               </div>
             </div>

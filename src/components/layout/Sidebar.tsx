@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -125,7 +126,7 @@ const Sidebar = () => {
                 isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
               }`
             : 'w-64 min-w-64'
-        } bg-gray-900 border-r border-gray-800 overflow-y-auto sidebar-scrollbar`}
+        } bg-gray-900 border-r border-gray-800 overflow-y-auto sidebar-scrollbar h-full`}
       >
         <div className="p-4">
           <div className="flex items-center mb-8">

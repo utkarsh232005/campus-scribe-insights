@@ -22,10 +22,9 @@ interface HeaderProps {
     role: string;
     avatar?: string;
   };
-  isAdmin?: boolean;
 }
 
-const Header = ({ user, isAdmin = false }: HeaderProps) => {
+const Header = ({ user }: HeaderProps) => {
   const { notifications } = useNotifications();
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
