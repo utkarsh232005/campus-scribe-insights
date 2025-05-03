@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -42,7 +41,6 @@ const loginSchema = z.object({
 const signupSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
-  department: z.string({ required_error: "Department is required" }),
 });
 
 const adminLoginSchema = z.object({
@@ -75,6 +73,7 @@ const Login = () => {
     mode: "onSubmit", // Only validate on submit, not onChange
   });
 
+  // Modified signup form without department validation
   const signupForm = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
@@ -109,16 +108,7 @@ const Login = () => {
         // This is a SignupFormValues with department
         const signupData = data as SignupFormValues;
         
-        if (!signupData.department) {
-          toast({
-            title: "Error",
-            description: "Department is required for signup",
-            variant: "destructive",
-          });
-          setIsLoading(false);
-          return;
-        }
-        
+        // Removed department validation - allowing registration without department
         console.log("Signing up with department:", signupData.department);
         
         // Register new user with department in metadata
@@ -127,7 +117,7 @@ const Login = () => {
           password: signupData.password,
           options: {
             data: {
-              department: signupData.department
+              department: signupData.department || 'Not specified'
             }
           }
         });
