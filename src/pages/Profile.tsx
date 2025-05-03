@@ -1,9 +1,8 @@
-
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { motion } from 'motion';
+import { motion } from 'framer-motion';
 
 const Profile = () => {
   const { user, isAdmin } = useAuth();
