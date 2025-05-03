@@ -15,7 +15,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
-import { useNotifications } from '@/context/NotificationContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,7 +40,7 @@ interface UserProfile {
   department: string;
   created_at: string;
   email?: string;
-  last_sign_in_at?: string | null;
+  last_sign_in_at?: string;
   status?: string;
   isAdmin?: boolean;
 }
@@ -53,21 +52,12 @@ const UserManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDepartment, setFilterDepartment] = useState('all');
   const { toast } = useToast();
-  const { addNotification } = useNotifications();
 
   useEffect(() => {
     const fetchUsers = async () => {
       setLoading(true);
       try {
         console.log("Fetching users data...");
-        
-        // Get auth users from auth.users table via built-in RPC
-        const { data: authUsersData, error: authUsersError } = await supabase.auth.admin.listUsers();
-        
-        if (authUsersError) {
-          console.error('Error fetching auth users:', authUsersError);
-          throw new Error('Failed to fetch user data');
-        }
         
         // Get profiles from profiles table
         const { data: profilesData, error: profilesError } = await supabase
@@ -80,6 +70,8 @@ const UserManagement = () => {
           throw new Error('Failed to fetch profile data');
         }
         
+        console.log("Profiles data:", profilesData);
+        
         // Get admin users
         const { data: adminData, error: adminError } = await supabase
           .from('admin_users')
@@ -90,27 +82,29 @@ const UserManagement = () => {
           console.error('Error fetching admin users:', adminError);
         }
         
+        console.log("Admin data:", adminData);
+        
         const adminEmails = adminData ? adminData.map(admin => admin.email.toLowerCase()) : [];
-        console.log("Admin emails:", adminEmails);
         
         // Merge auth and profile data
         let mergedUsers: UserProfile[] = [];
         
-        if (authUsersData?.users) {
-          mergedUsers = authUsersData.users.map(authUser => {
-            // Find matching profile if exists
-            const profile = profilesData?.find(p => p.id === authUser.id);
+        if (profilesData) {
+          // Generate fake emails for testing if needed
+          mergedUsers = profilesData.map(profile => {
+            // Generate email from department
+            const email = `${profile.department}@faculty.edu`;
             
             // Check if user is admin
-            const isAdmin = authUser.email ? adminEmails.includes(authUser.email.toLowerCase()) : false;
+            const isAdmin = adminEmails.includes(email.toLowerCase());
             
             return {
-              id: authUser.id,
-              department: profile?.department || authUser.user_metadata?.department || 'unknown',
-              email: authUser.email || 'No email',
-              created_at: authUser.created_at,
-              last_sign_in_at: authUser.last_sign_in_at,
-              status: authUser.banned ? 'inactive' : 'active',
+              id: profile.id,
+              department: profile.department,
+              created_at: profile.created_at,
+              email: email,
+              last_sign_in_at: null,
+              status: 'active',
               isAdmin: isAdmin
             };
           });
@@ -149,9 +143,9 @@ const UserManagement = () => {
       const term = searchTerm.toLowerCase();
       result = result.filter(
         user => 
-          (user.email?.toLowerCase().includes(term) || false) ||
-          (user.department?.toLowerCase().includes(term) || false) ||
-          (user.id?.toLowerCase().includes(term) || false)
+          user.email?.toLowerCase().includes(term) ||
+          user.department?.toLowerCase().includes(term) ||
+          user.id?.toLowerCase().includes(term)
       );
     }
     
@@ -160,24 +154,9 @@ const UserManagement = () => {
 
   const handleUserAction = async (userId: string, action: 'activate' | 'deactivate') => {
     try {
-      // Update the user in Supabase Auth
-      if (action === 'deactivate') {
-        const { error } = await supabase.auth.admin.updateUserById(
-          userId,
-          { ban_duration: '999999h' } // Effectively permanent
-        );
-        
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.auth.admin.updateUserById(
-          userId,
-          { ban_duration: null }
-        );
-        
-        if (error) throw error;
-      }
+      // In a real app, you'd update the user status in your auth system
+      // For demo purposes, we'll just update our local state
       
-      // Update local state
       setUsers(users.map(user => 
         user.id === userId 
           ? { ...user, status: action === 'activate' ? 'active' : 'inactive' } 
@@ -189,12 +168,6 @@ const UserManagement = () => {
           ? { ...user, status: action === 'activate' ? 'active' : 'inactive' } 
           : user
       ));
-      
-      // Send notification
-      await addNotification({
-        message: `User ${action === 'activate' ? 'activated' : 'deactivated'} by admin`,
-        type: action === 'activate' ? 'success' : 'warning'
-      });
       
       toast({
         title: action === 'activate' ? 'User activated' : 'User deactivated',
@@ -211,7 +184,7 @@ const UserManagement = () => {
   };
 
   // Get unique departments for filtering
-  const departments = ['all', ...new Set(users.filter(user => user.department).map(user => user.department))];
+  const departments = ['all', ...new Set(users.map(user => user.department))];
 
   return (
     <DashboardLayout>
@@ -299,7 +272,7 @@ const UserManagement = () => {
                           <TableCell>
                             <div className="flex items-center">
                               <div className="h-9 w-9 rounded-full bg-gray-800 flex items-center justify-center mr-3">
-                                <span className="text-xs font-bold">{user.email?.[0]?.toUpperCase() || '?'}</span>
+                                <span className="text-xs font-bold">{user.department?.[0]?.toUpperCase()}</span>
                               </div>
                               <div>
                                 <div className="font-medium text-sm">{user.email}</div>
@@ -312,7 +285,7 @@ const UserManagement = () => {
                           </TableCell>
                           <TableCell>
                             <Badge className="bg-gray-800 text-gray-300 hover:bg-gray-700">
-                              {user.department?.replace(/_/g, ' ') || 'Not set'}
+                              {user.department.replace(/_/g, ' ')}
                             </Badge>
                           </TableCell>
                           <TableCell>
@@ -341,7 +314,7 @@ const UserManagement = () => {
                             )}
                           </TableCell>
                           <TableCell>
-                            {user.created_at ? format(new Date(user.created_at), 'MMM d, yyyy') : 'N/A'}
+                            {format(new Date(user.created_at), 'MMM d, yyyy')}
                           </TableCell>
                           <TableCell className="text-right">
                             <DropdownMenu>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Award, ArrowRight, Calendar, Plus, Save, X } from 'lucide-react';
@@ -5,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { useNotifications } from '@/context/NotificationContext';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -70,7 +70,6 @@ const AwardsPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const { isAdmin } = useAuth();
   const { toast } = useToast();
-  const { addNotification } = useNotifications();
   
   const departments = [
     'computer_science',
@@ -164,12 +163,6 @@ const AwardsPage = () => {
         }]);
         
       if (error) throw error;
-      
-      // Create notification
-      await addNotification({
-        message: `Admin added new award: "${formData.title}" for ${formData.recipient} in ${formData.department.replace('_', ' ')} department`,
-        type: "success"
-      });
       
       // Reset form and close dialog
       setFormData({
