@@ -62,7 +62,7 @@ const Login = () => {
   
   const [isSignUp, setIsSignUp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>(adminRequired ? "admin" : "faculty");
+  const [activeTab, setActiveTab] = useState<string>("faculty");
   
   // Use separate forms for login and signup
   const loginForm = useForm<LoginFormValues>({
@@ -263,7 +263,11 @@ const Login = () => {
                           <FormControl>
                             <div className="relative">
                               <Mail className="absolute left-3 top-2.5 h-5 w-5 text-gray-500" />
-                              <Input placeholder="faculty@college.edu" {...field} className="pl-10 bg-gray-800/50 border-gray-700 text-white transition-all" />
+                              <Input 
+                                placeholder="faculty@college.edu" 
+                                {...field} 
+                                className="pl-10 bg-gray-800 border-gray-700 text-white transition-all" 
+                              />
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -280,7 +284,11 @@ const Login = () => {
                           <FormControl>
                             <div className="relative">
                               <LockKeyhole className="absolute left-3 top-2.5 h-5 w-5 text-gray-500" />
-                              <Input type="password" {...field} className="pl-10 bg-gray-800/50 border-gray-700 text-white transition-all" />
+                              <Input 
+                                type="password" 
+                                {...field} 
+                                className="pl-10 bg-gray-800 border-gray-700 text-white transition-all" 
+                              />
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -296,7 +304,7 @@ const Login = () => {
                           <FormLabel className="text-gray-300">Department</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
-                              <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white transition-all">
+                              <SelectTrigger className="bg-gray-800 border-gray-700 text-white transition-all">
                                 <SelectValue placeholder="Select your department" />
                               </SelectTrigger>
                             </FormControl>
@@ -356,7 +364,11 @@ const Login = () => {
                           <FormControl>
                             <div className="relative">
                               <Mail className="absolute left-3 top-2.5 h-5 w-5 text-gray-500" />
-                              <Input placeholder="faculty@college.edu" {...field} className="pl-10 bg-gray-800/50 border-gray-700 text-white transition-all" />
+                              <Input 
+                                placeholder="faculty@college.edu" 
+                                {...field} 
+                                className="pl-10 bg-gray-800 border-gray-700 text-white transition-all" 
+                              />
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -373,7 +385,11 @@ const Login = () => {
                           <FormControl>
                             <div className="relative">
                               <LockKeyhole className="absolute left-3 top-2.5 h-5 w-5 text-gray-500" />
-                              <Input type="password" {...field} className="pl-10 bg-gray-800/50 border-gray-700 text-white transition-all" />
+                              <Input 
+                                type="password" 
+                                {...field} 
+                                className="pl-10 bg-gray-800 border-gray-700 text-white transition-all" 
+                              />
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -426,7 +442,11 @@ const Login = () => {
                         <FormControl>
                           <div className="relative">
                             <Mail className="absolute left-3 top-2.5 h-5 w-5 text-gray-500" />
-                            <Input placeholder="admin@example.com" {...field} className="pl-10 bg-gray-800/50 border-gray-700 text-white transition-all" />
+                            <Input 
+                              placeholder="admin@example.com" 
+                              {...field} 
+                              className="pl-10 bg-gray-800 border-gray-700 text-white transition-all" 
+                            />
                           </div>
                         </FormControl>
                         <FormMessage />
@@ -443,7 +463,11 @@ const Login = () => {
                         <FormControl>
                           <div className="relative">
                             <LockKeyhole className="absolute left-3 top-2.5 h-5 w-5 text-gray-500" />
-                            <Input type="password" {...field} className="pl-10 bg-gray-800/50 border-gray-700 text-white transition-all" />
+                            <Input 
+                              type="password" 
+                              {...field} 
+                              className="pl-10 bg-gray-800 border-gray-700 text-white transition-all" 
+                            />
                           </div>
                         </FormControl>
                         <FormMessage />
