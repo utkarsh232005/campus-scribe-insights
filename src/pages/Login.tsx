@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -39,9 +40,9 @@ const loginSchema = z.object({
 
 // Updated schema for signup to accept any email format with no validation
 const signupSchema = z.object({
-  email: z.string().min(1, { message: "Email is required" }),
-  password: z.string().min(1, { message: "Password is required" }),
-  department: z.string().optional(),
+  email: z.string().email({ message: "Please enter a valid email address" }),
+  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+  department: z.string().min(1, { message: "Department is required" }),
 });
 
 const adminLoginSchema = z.object({
@@ -266,7 +267,7 @@ const Login = () => {
                               <Input 
                                 placeholder="faculty@college.edu" 
                                 {...field} 
-                                className="pl-10 bg-gray-800 border-gray-700 text-white transition-all" 
+                                className="pl-10 bg-gray-800 border-gray-700 text-white" 
                               />
                             </div>
                           </FormControl>
@@ -287,7 +288,7 @@ const Login = () => {
                               <Input 
                                 type="password" 
                                 {...field} 
-                                className="pl-10 bg-gray-800 border-gray-700 text-white transition-all" 
+                                className="pl-10 bg-gray-800 border-gray-700 text-white" 
                               />
                             </div>
                           </FormControl>
@@ -304,7 +305,7 @@ const Login = () => {
                           <FormLabel className="text-gray-300">Department</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
-                              <SelectTrigger className="bg-gray-800 border-gray-700 text-white transition-all">
+                              <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
                                 <SelectValue placeholder="Select your department" />
                               </SelectTrigger>
                             </FormControl>
@@ -367,7 +368,7 @@ const Login = () => {
                               <Input 
                                 placeholder="faculty@college.edu" 
                                 {...field} 
-                                className="pl-10 bg-gray-800 border-gray-700 text-white transition-all" 
+                                className="pl-10 bg-gray-800 border-gray-700 text-white" 
                               />
                             </div>
                           </FormControl>
@@ -388,7 +389,7 @@ const Login = () => {
                               <Input 
                                 type="password" 
                                 {...field} 
-                                className="pl-10 bg-gray-800 border-gray-700 text-white transition-all" 
+                                className="pl-10 bg-gray-800 border-gray-700 text-white" 
                               />
                             </div>
                           </FormControl>
@@ -445,7 +446,7 @@ const Login = () => {
                             <Input 
                               placeholder="admin@example.com" 
                               {...field} 
-                              className="pl-10 bg-gray-800 border-gray-700 text-white transition-all" 
+                              className="pl-10 bg-gray-800 border-gray-700 text-white" 
                             />
                           </div>
                         </FormControl>
@@ -466,7 +467,7 @@ const Login = () => {
                             <Input 
                               type="password" 
                               {...field} 
-                              className="pl-10 bg-gray-800 border-gray-700 text-white transition-all" 
+                              className="pl-10 bg-gray-800 border-gray-700 text-white" 
                             />
                           </div>
                         </FormControl>
