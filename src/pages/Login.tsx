@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,7 +26,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { School, LockKeyhole, Mail, ShieldCheck } from 'lucide-react';
+import { School, LockKeyhole, Mail, ShieldCheck, Google } from 'lucide-react';
 import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/components/ui/use-toast';
@@ -41,6 +42,7 @@ const loginSchema = z.object({
 const signupSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+  department: z.string().optional(),
 });
 
 const adminLoginSchema = z.object({
@@ -73,7 +75,7 @@ const Login = () => {
     mode: "onSubmit", // Only validate on submit, not onChange
   });
 
-  // Modified signup form without department validation
+  // Modified signup form with department
   const signupForm = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
@@ -107,9 +109,6 @@ const Login = () => {
       if (isSignUp) {
         // This is a SignupFormValues with department
         const signupData = data as SignupFormValues;
-        
-        // Removed department validation - allowing registration without department
-        console.log("Signing up with department:", signupData.department);
         
         // Register new user with department in metadata
         const { error } = await supabase.auth.signUp({
@@ -171,6 +170,28 @@ const Login = () => {
     }
   }
 
+  async function handleGoogleSignIn() {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin + '/dashboard'
+        }
+      });
+      
+      if (error) throw error;
+    } catch (error: any) {
+      console.error("Google login error:", error);
+      toast({
+        title: "Google login failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsLoading(false);
+    }
+  }
+
   // If user is already logged in and has finished loading, redirect them
   if (user && !loading) {
     return <Navigate to={from} replace />;
@@ -194,7 +215,6 @@ const Login = () => {
         <div className="bg-gray-900/50 backdrop-blur-lg py-8 px-4 shadow-xl shadow-blue-500/5 sm:rounded-lg sm:px-10 border border-gray-800 animate-scale-in">
           <Tabs defaultValue="faculty" value={activeTab} onValueChange={(val) => {
             setActiveTab(val);
-            // Remove the reference to setAdminSubmitted and just set the tab
           }} className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="faculty" className="transition-all duration-300">
@@ -208,6 +228,25 @@ const Login = () => {
             </TabsList>
             
             <TabsContent value="faculty" className="space-y-4 mt-0">
+              <Button 
+                variant="outline" 
+                className="w-full flex items-center justify-center gap-2 bg-gray-800/50 border-gray-700 hover:bg-gray-700 transition-all"
+                onClick={handleGoogleSignIn}
+                disabled={isLoading}
+              >
+                <Google className="h-5 w-5 text-red-400" />
+                Sign in with Google
+              </Button>
+
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-700"></div>
+                </div>
+                <div className="relative flex justify-center text-xs">
+                  <span className="px-2 bg-gray-900/50 text-gray-400">or continue with email</span>
+                </div>
+              </div>
+
               {isSignUp ? (
                 <Form {...signupForm}>
                   <form onSubmit={signupForm.handleSubmit(onFacultySubmit)} className="space-y-6">

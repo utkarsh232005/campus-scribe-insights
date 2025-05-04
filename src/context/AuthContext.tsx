@@ -153,6 +153,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         console.log('Signed in user:', session.user);
         console.log('User metadata:', session.user.user_metadata);
+        
+        // For the Google OAuth provider, we may need to save additional data
+        if (session.user?.app_metadata?.provider === 'google') {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .upsert({
+              id: session.user.id,
+              department: session.user.user_metadata.department || 'Not specified',
+              email: session.user.email,
+              updated_at: new Date().toISOString(),
+            }, {
+              onConflict: 'id'
+            });
+            
+          if (profileError) {
+            console.error('Error updating profile for Google user:', profileError);
+          }
+        }
+        
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setIsAdmin(false);
