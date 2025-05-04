@@ -9,6 +9,8 @@ import { AuthProvider } from "@/context/AuthContext";
 import { NotificationProvider } from "@/context/NotificationContext";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import SignUp from "./pages/SignUp";
+import AuthCallback from "./pages/AuthCallback";
 import Reports from "./pages/Reports";
 import ReportSubmission from "./pages/ReportSubmission";
 import Calendar from "./pages/Calendar";
@@ -39,6 +41,8 @@ const AppWithProviders = () => (
               {/* Public routes */}
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<SignUp />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
               
               {/* Protected routes */}
               <Route path="/dashboard" element={<PrivateRoute><Index /></PrivateRoute>} />

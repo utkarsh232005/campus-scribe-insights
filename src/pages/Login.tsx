@@ -27,7 +27,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { School, LockKeyhole, Mail, ShieldCheck } from 'lucide-react';
-import { Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -38,20 +38,12 @@ const loginSchema = z.object({
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
 });
 
-// Updated schema for signup to accept any email format with no validation
-const signupSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
-  department: z.string().min(1, { message: "Department is required" }),
-});
-
 const adminLoginSchema = z.object({
   email: z.string().email({ message: "Please enter admin email" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" })
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
-type SignupFormValues = z.infer<typeof signupSchema>;
 type AdminLoginFormValues = z.infer<typeof adminLoginSchema>;
 
 const Login = () => {
@@ -61,27 +53,15 @@ const Login = () => {
   const from = (location.state as any)?.from?.pathname || '/dashboard';
   const adminRequired = (location.state as any)?.adminRequired || false;
   
-  const [isSignUp, setIsSignUp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("faculty");
   
-  // Use separate forms for login and signup
+  // Use form for login
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
       password: "",
-    },
-    mode: "onSubmit", // Only validate on submit, not onChange
-  });
-
-  // Modified signup form with department
-  const signupForm = useForm<SignupFormValues>({
-    resolver: zodResolver(signupSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-      department: "",
     },
     mode: "onSubmit", // Only validate on submit, not onChange
   });
@@ -102,40 +82,16 @@ const Login = () => {
     }
   }, [user, loading, navigate, from]);
 
-  async function onFacultySubmit(data: LoginFormValues | SignupFormValues) {
+  async function onFacultySubmit(data: LoginFormValues) {
     setIsLoading(true);
     
     try {
-      if (isSignUp) {
-        // This is a SignupFormValues with department
-        const signupData = data as SignupFormValues;
-        
-        // Register new user with department in metadata
-        const { error } = await supabase.auth.signUp({
-          email: signupData.email,
-          password: signupData.password,
-          options: {
-            data: {
-              department: signupData.department || 'Not specified'
-            }
-          }
-        });
-        
-        if (error) throw error;
-        
-        toast({
-          title: "Account created",
-          description: "Check your email for a confirmation link",
-        });
-        
-      } else {
-        // For login
-        await signIn(data.email, data.password);
-      }
+      // For login
+      await signIn(data.email, data.password);
     } catch (error: any) {
-      console.error("Signup/Login error:", error);
+      console.error("Login error:", error);
       toast({
-        title: isSignUp ? "Sign up failed" : "Login failed",
+        title: "Login failed",
         description: error.message,
         variant: "destructive",
       });
@@ -252,183 +208,75 @@ const Login = () => {
                 </div>
               </div>
 
-              {isSignUp ? (
-                <Form {...signupForm}>
-                  <form onSubmit={signupForm.handleSubmit(onFacultySubmit)} className="space-y-6">
-                    <FormField
-                      control={signupForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-gray-300">Email address</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Mail className="absolute left-3 top-2.5 h-5 w-5 text-gray-500" />
-                              <Input 
-                                placeholder="faculty@college.edu" 
-                                {...field} 
-                                className="pl-10 bg-gray-800 border-gray-700 text-white" 
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={signupForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-gray-300">Password</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <LockKeyhole className="absolute left-3 top-2.5 h-5 w-5 text-gray-500" />
-                              <Input 
-                                type="password" 
-                                {...field} 
-                                className="pl-10 bg-gray-800 border-gray-700 text-white" 
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+              <Form {...loginForm}>
+                <form onSubmit={loginForm.handleSubmit(onFacultySubmit)} className="space-y-6">
+                  <FormField
+                    control={loginForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-gray-300">Email address</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Mail className="absolute left-3 top-2.5 h-5 w-5 text-gray-500" />
+                            <Input 
+                              placeholder="faculty@college.edu" 
+                              {...field} 
+                              className="pl-10 bg-gray-800 border-gray-700 text-white" 
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   
-                    <FormField
-                      control={signupForm.control}
-                      name="department"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-gray-300">Department</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
-                                <SelectValue placeholder="Select your department" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent className="bg-gray-800 border-gray-700">
-                              <SelectItem value="computer_science" className="text-white hover:bg-gray-700">Computer Science</SelectItem>
-                              <SelectItem value="electrical_engineering" className="text-white hover:bg-gray-700">Electrical Engineering</SelectItem>
-                              <SelectItem value="mechanical_engineering" className="text-white hover:bg-gray-700">Mechanical Engineering</SelectItem>
-                              <SelectItem value="civil_engineering" className="text-white hover:bg-gray-700">Civil Engineering</SelectItem>
-                              <SelectItem value="physics" className="text-white hover:bg-gray-700">Physics</SelectItem>
-                              <SelectItem value="mathematics" className="text-white hover:bg-gray-700">Mathematics</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                  <FormField
+                    control={loginForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-gray-300">Password</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <LockKeyhole className="absolute left-3 top-2.5 h-5 w-5 text-gray-500" />
+                            <Input 
+                              type="password" 
+                              {...field} 
+                              className="pl-10 bg-gray-800 border-gray-700 text-white" 
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                    <div className="flex items-center justify-between">
-                      <Button
-                        type="button"
-                        variant="link"
-                        className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
-                        onClick={() => {
-                          setIsSignUp(false);
-                          loginForm.reset();
-                        }}
-                      >
-                        Already have an account? Sign in
-                      </Button>
-                    </div>
-
-                    <Button 
-                      type="submit" 
-                      className="w-full bg-blue-600 hover:bg-blue-700 transition-colors"
-                      disabled={isLoading}
+                  <div className="flex items-center justify-between">
+                    <Link
+                      to="/signup"
+                      className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
                     >
-                      {isLoading ? (
-                        <>
-                          <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-t-transparent border-white"></span>
-                          Creating Account...
-                        </>
-                      ) : (
-                        'Create Account'
-                      )}
-                    </Button>
-                  </form>
-                </Form>
-              ) : (
-                <Form {...loginForm}>
-                  <form onSubmit={loginForm.handleSubmit(onFacultySubmit)} className="space-y-6">
-                    <FormField
-                      control={loginForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-gray-300">Email address</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Mail className="absolute left-3 top-2.5 h-5 w-5 text-gray-500" />
-                              <Input 
-                                placeholder="faculty@college.edu" 
-                                {...field} 
-                                className="pl-10 bg-gray-800 border-gray-700 text-white" 
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={loginForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-gray-300">Password</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <LockKeyhole className="absolute left-3 top-2.5 h-5 w-5 text-gray-500" />
-                              <Input 
-                                type="password" 
-                                {...field} 
-                                className="pl-10 bg-gray-800 border-gray-700 text-white" 
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                      Need an account? Sign up
+                    </Link>
+                  </div>
 
-                    <div className="flex items-center justify-between">
-                      <Button
-                        type="button"
-                        variant="link"
-                        className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
-                        onClick={() => {
-                          setIsSignUp(true);
-                          signupForm.reset();
-                        }}
-                      >
-                        Need an account? Sign up
-                      </Button>
-                    </div>
-
-                    <Button 
-                      type="submit" 
-                      className="w-full bg-blue-600 hover:bg-blue-700 transition-colors"
-                      disabled={isLoading}
-                    >
-                      {isLoading ? (
-                        <>
-                          <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-t-transparent border-white"></span>
-                          Signing in...
-                        </>
-                      ) : (
-                        'Sign in'
-                      )}
-                    </Button>
-                  </form>
-                </Form>
-              )}
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-blue-600 hover:bg-blue-700 transition-colors"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-t-transparent border-white"></span>
+                        Signing in...
+                      </>
+                    ) : (
+                      'Sign in'
+                    )}
+                  </Button>
+                </form>
+              </Form>
             </TabsContent>
             
             <TabsContent value="admin" className="space-y-4 mt-0">
