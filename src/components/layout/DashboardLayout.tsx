@@ -41,7 +41,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         if (authUser?.email) {
           // Extract display name or use email as fallback
           const displayName = authUser.user_metadata && 'full_name' in authUser.user_metadata 
-            ? authUser.user_metadata.full_name 
+            ? String(authUser.user_metadata.full_name)
             : authUser.email?.split('@')[0] || "User";
           
           // Set user data for Header component
