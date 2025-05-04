@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from "@/lib/utils";
@@ -34,8 +33,8 @@ const Sidebar = () => {
 
   // Hide scrollbar with direct CSS
   const hideScrollbarStyle = {
-    scrollbarWidth: 'none',
-    msOverflowStyle: 'none',
+    scrollbarWidth: 'none' as 'none',
+    msOverflowStyle: 'none' as 'none',
   };
 
   // Add ::-webkit-scrollbar style to document
