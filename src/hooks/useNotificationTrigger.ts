@@ -39,6 +39,8 @@ export const useNotificationTrigger = ({ tableName, itemType }: UseNotificationT
           }
           
           // Trigger appropriate notification based on user role
+          // The user who created the item will get a personal notification
+          // For reports, a broadcast notification is also sent to all users
           if (isAdmin) {
             notifyAdminAction('added', itemType, itemName);
           } else {

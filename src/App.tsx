@@ -26,6 +26,7 @@ import UserManagement from "./pages/admin/UserManagement";
 import PrivateRoute from "./components/auth/PrivateRoute";
 import AdminRoute from "./components/auth/AdminRoute";
 import Profile from "./pages/Profile";
+import FacultyProjectPage from "./pages/FacultyProjectPage"; // Add the new page
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,7 @@ const AppWithProviders = () => (
               <Route path="/awards" element={<PrivateRoute><Awards /></PrivateRoute>} />
               <Route path="/analysis" element={<PrivateRoute><Analysis /></PrivateRoute>} />
               <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+              <Route path="/faculty-projects" element={<PrivateRoute><FacultyProjectPage /></PrivateRoute>} />
               
               {/* Admin routes */}
               <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
