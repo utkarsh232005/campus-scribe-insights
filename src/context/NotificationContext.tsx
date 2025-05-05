@@ -46,6 +46,9 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
             });
             
             setNotifications(sortedNotifications);
+            
+            // Log the notifications count for debugging
+            console.log(`Fetched ${sortedNotifications.length} notifications for user ${user.id}`);
           }
         } catch (error) {
           console.error('Error in fetchNotifications:', error);
@@ -59,11 +62,11 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
     }
   }, [user]);
   
-  // Subscribe to all notifications, not just those for the current user
+  // Subscribe to real-time notifications for ALL notifications
   useEffect(() => {
     // This channel listens for all notification inserts
     const channel = supabase
-      .channel('all-notifications')
+      .channel('public:notifications')
       .on(
         'postgres_changes',
         {
@@ -73,6 +76,7 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
         },
         (payload) => {
           const newNotification = payload.new as Notification;
+          console.log('Real-time notification received:', newNotification);
           
           // Add to local state if it's for this user or has no user_id (broadcast)
           if (!newNotification.user_id || (user && newNotification.user_id === user.id)) {
@@ -98,7 +102,9 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`Notification subscription status: ${status}`);
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -107,6 +113,7 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
 
   const addNotification = async (notification: Omit<Notification, 'id' | 'created_at'>) => {
     try {
+      console.log('Adding notification:', notification);
       const { data, error } = await supabase
         .from('notifications')
         .insert([
@@ -118,6 +125,8 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
 
       if (error) {
         console.error('Error adding notification:', error);
+      } else {
+        console.log('Notification added successfully');
       }
 
       return data;
@@ -126,11 +135,12 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
     }
   };
 
-  // New method to broadcast a notification to all users (no user_id)
+  // Method to broadcast a notification to all users (no user_id)
   const broadcastNotification = async (message: string, type: string = 'info') => {
     if (!user) return;
     
     try {
+      console.log('Broadcasting notification to all users:', message);
       await addNotification({
         message,
         type,
