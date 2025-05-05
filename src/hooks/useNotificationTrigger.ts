@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import { useNotifications } from '@/context/NotificationContext';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, enableRealtimeForTable } from '@/integrations/supabase/client';
 
 interface UseNotificationTriggerProps {
   tableName: string;
@@ -21,16 +21,9 @@ export const useNotificationTrigger = ({ tableName, itemType }: UseNotificationT
     // Enable PostgreSQL replication for this table if not already done
     const setupReplication = async () => {
       try {
-        // This is typically done in SQL migrations, but we'll do it here
-        // to ensure the table is set up for realtime
-        const { error } = await supabase.rpc('enable_realtime_for_table', {
-          table_name: tableName
-        });
-        
-        if (error) {
-          console.log('Note: RPC failed, table may already be enabled or permissions lacking:', error);
-          // This is not critical, as the table might already be set up
-        }
+        console.log(`Attempting to enable realtime for ${tableName}`);
+        const result = await enableRealtimeForTable(tableName);
+        console.log(`Realtime setup result for ${tableName}:`, result);
       } catch (err) {
         console.error('Failed to set up replication:', err);
       }
@@ -38,6 +31,12 @@ export const useNotificationTrigger = ({ tableName, itemType }: UseNotificationT
     
     setupReplication();
 
+    // Also enable realtime for notifications table to ensure we can listen to new notifications
+    enableRealtimeForTable('notifications')
+      .then(result => console.log('Notifications table realtime setup:', result))
+      .catch(err => console.error('Failed to set up notifications realtime:', err));
+
+    // Subscribe to changes in the specified table
     const channel = supabase
       .channel(`${tableName}-changes`)
       .on(
@@ -62,12 +61,14 @@ export const useNotificationTrigger = ({ tableName, itemType }: UseNotificationT
           }
           
           // Trigger appropriate notification based on user role
-          // The user who created the item will get a personal notification
-          // For all items, a broadcast notification is sent to all users
           if (isAdmin) {
-            notifyAdminAction('added', itemType, itemName);
+            notifyAdminAction('added', itemType, itemName)
+              .then(() => console.log(`Admin notification sent for ${itemName}`))
+              .catch(e => console.error("Error sending admin notification:", e));
           } else {
-            notifyFacultyAction('added', itemType, itemName);
+            notifyFacultyAction('added', itemType, itemName)
+              .then(() => console.log(`Faculty notification sent for ${itemName}`))
+              .catch(e => console.error("Error sending faculty notification:", e));
           }
         }
       )

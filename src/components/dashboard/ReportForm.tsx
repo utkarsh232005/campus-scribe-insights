@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,9 +22,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { useNotifications } from '@/context/NotificationContext';
 
 const reportSchema = z.object({
   title: z.string().min(5, { message: "Report title must be at least 5 characters" }),
@@ -42,6 +44,7 @@ const ReportForm = () => {
   const navigate = useNavigate();
   const [userDepartment, setUserDepartment] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
+  const { notifyFacultyAction, broadcastNotification } = useNotifications();
   
   React.useEffect(() => {
     async function getUserDepartment() {
@@ -146,6 +149,21 @@ const ReportForm = () => {
       if (error) {
         console.error("Supabase error details:", error);
         throw new Error(`Failed to submit report: ${error.message}`);
+      }
+
+      // Send notification about the new report
+      try {
+        console.log("Triggering notifications for new report");
+        // Use notifyFacultyAction from NotificationContext
+        await notifyFacultyAction('added', 'report', data.title);
+        
+        // Also directly broadcast to ensure all users get it
+        await broadcastNotification(`New report "${data.title}" has been submitted`);
+        
+        console.log("Notifications triggered successfully");
+      } catch (notifError) {
+        console.error("Error sending notifications:", notifError);
+        // Don't throw here, just log it - we still want to continue the flow
       }
 
       toast({

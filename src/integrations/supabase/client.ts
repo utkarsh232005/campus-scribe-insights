@@ -6,14 +6,39 @@ import type { Database } from './types';
 const SUPABASE_URL = "https://woulrjxckivziwsjzzvf.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndvdWxyanhja2l2eml3c2p6enZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU1ODI0MDEsImV4cCI6MjA2MTE1ODQwMX0.28cKwiZ6llYtOSzOaC4CLed6dRbQMEFT__QHl8KfR5M";
 
+// Helper function to check admin status
+export const checkAdminStatus = async (email: string) => {
+  try {
+    const { data, error } = await supabase.rpc('get_admin_status', {
+      admin_email: email,
+    });
+    if (error) throw error;
+    return data || false;
+  } catch (error) {
+    console.error('Error checking admin status:', error);
+    return false;
+  }
+};
+
 // Helper function to enable realtime for a table
 export const enableRealtimeForTable = async (tableName: string) => {
   try {
-    const { error } = await supabase.rpc('enable_realtime_for_table', {
-      table_name: tableName,
+    console.log(`Attempting to enable realtime for ${tableName} table`);
+    
+    // Use direct SQL query instead of RPC function since it's not yet available
+    const { error } = await supabase.from('_realtime').insert({
+      table: tableName,
+      insert: true,
+      update: true,
+      delete: true
     });
-    if (error) throw error;
-    return { success: true };
+    
+    if (error) {
+      console.log('Error enabling realtime with direct method:', error);
+      console.log('This is normal if realtime is already enabled or if not authorized');
+    }
+    
+    return { success: !error };
   } catch (error) {
     console.error(`Error enabling realtime for ${tableName}:`, error);
     return { success: false, error };
