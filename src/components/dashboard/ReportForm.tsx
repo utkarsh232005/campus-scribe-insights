@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -42,9 +41,9 @@ type ReportFormValues = z.infer<typeof reportSchema>;
 const ReportForm = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [userDepartment, setUserDepartment] = React.useState<string | null>(null);
-  const [loading, setLoading] = React.useState(false);
-  const { notifyFacultyAction, broadcastNotification } = useNotifications();
+  const [userDepartment, setUserDepartment] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const { notifyFacultyAction, addNotification } = useNotifications();
   
   React.useEffect(() => {
     async function getUserDepartment() {
@@ -135,7 +134,7 @@ const ReportForm = () => {
         .from('reports')
         .insert({
           title: data.title,
-          department: userDepartment, // Use original department value (e.g., "computer_science")
+          department: userDepartment, 
           academic_year: data.academicYear,
           publication_count: parseInt(data.publicationCount),
           conference_count: parseInt(data.conferenceCount),
@@ -144,26 +143,40 @@ const ReportForm = () => {
           achievements: data.achievements,
           user_id: user.id,
           status: 'pending'
-        });
+        })
+        .select();
 
       if (error) {
         console.error("Supabase error details:", error);
         throw new Error(`Failed to submit report: ${error.message}`);
       }
 
-      // Send notification about the new report
+      console.log("Report submitted successfully:", report);
+
+      // Send notification directly using addNotification first
       try {
-        console.log("Triggering notifications for new report");
-        // Use notifyFacultyAction from NotificationContext
-        await notifyFacultyAction('added', 'report', data.title);
+        const dept = userDepartment.split('_').map(word => 
+          word.charAt(0).toUpperCase() + word.slice(1)
+        ).join(' ');
         
-        // Also directly broadcast to ensure all users get it
-        await broadcastNotification(`New report "${data.title}" has been submitted`);
+        await addNotification({
+          message: `New report "${data.title}" submitted from ${dept} department`,
+          type: 'info',
+          // No user_id makes this a broadcast to all users
+        });
         
-        console.log("Notifications triggered successfully");
+        console.log("Direct notification created");
       } catch (notifError) {
-        console.error("Error sending notifications:", notifError);
-        // Don't throw here, just log it - we still want to continue the flow
+        console.error("Error sending direct notification:", notifError);
+      }
+
+      // Then use the notifyFacultyAction method as a backup
+      try {
+        console.log("Triggering faculty action notification");
+        await notifyFacultyAction('submitted', 'report', data.title);
+        console.log("Faculty notification triggered successfully");
+      } catch (notifError) {
+        console.error("Error sending faculty notifications:", notifError);
       }
 
       toast({
@@ -188,12 +201,12 @@ const ReportForm = () => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-white/5 backdrop-blur-lg rounded-lg shadow p-6 border border-gray-800">
       <h2 className="text-xl font-bold mb-6">Annual Report Submission</h2>
       
       {userDepartment && (
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-          <p className="text-sm text-blue-600">
+        <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-md">
+          <p className="text-sm text-blue-400">
             You are submitting this report as a member of the <strong>
               {userDepartment.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
             </strong> department.

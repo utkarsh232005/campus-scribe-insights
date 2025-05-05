@@ -1,8 +1,8 @@
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { toast } from '@/components/ui/sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, enableRealtimeForTable } from '@/integrations/supabase/client';
 import { Notification } from '@/types/user';
 import { useAuth } from './AuthContext';
 
@@ -24,12 +24,12 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
 
   // Enhanced function to add notification with better error handling
   const addNotification = useCallback(async (notification: Omit<Notification, 'id' | 'created_at'>) => {
-    if (!user && notification.user_id) {
-      console.error('Cannot add user-specific notification when not logged in');
-      return;
-    }
-    
     try {
+      if (!notification.message) {
+        console.error('Cannot add notification with empty message');
+        return;
+      }
+      
       console.log('Adding notification:', notification);
       
       // Make sure we have a created_at timestamp
@@ -52,7 +52,7 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
     } catch (error) {
       console.error('Error in addNotification:', error);
     }
-  }, [user]);
+  }, []);
 
   // Function to fetch notifications
   const fetchNotifications = useCallback(async () => {
@@ -93,10 +93,16 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
 
   // Fetch notifications on component mount or when user changes
   useEffect(() => {
-    fetchNotifications();
-    
-    // Clear notifications when user logs out
-    if (!user) {
+    if (user?.id) {
+      fetchNotifications();
+      
+      // Enable realtime for the notifications table
+      enableRealtimeForTable('notifications')
+        .then(result => console.log('Notifications realtime setup:', result))
+        .catch(err => console.error('Failed to set up notifications realtime:', err));
+      
+      // Clear notifications when user logs out
+    } else {
       setNotifications([]);
     }
   }, [user, fetchNotifications]);
@@ -104,19 +110,45 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
   // Function to broadcast a notification to all users (no user_id)
   const broadcastNotification = useCallback(async (message: string, type: string = 'info') => {
     try {
+      if (!message) {
+        console.error('Cannot broadcast empty message');
+        return;
+      }
+      
       console.log('Broadcasting notification to all users:', message);
-      await addNotification({
+      
+      const notificationData = {
         message,
         type,
         // Omitting user_id makes this a broadcast notification
-      });
+        created_at: new Date().toISOString(),
+      };
+      
+      const { data, error } = await supabase
+        .from('notifications')
+        .insert([notificationData])
+        .select();
+        
+      if (error) {
+        console.error('Error broadcasting notification:', error);
+        throw error;
+      }
+      
+      console.log('Broadcast notification created:', data);
     } catch (error) {
       console.error('Error broadcasting notification:', error);
     }
-  }, [addNotification]);
+  }, []);
 
   // Subscribe to real-time notifications for ALL notifications
   useEffect(() => {
+    if (!user) return;
+    
+    // Enable realtime for notifications table
+    enableRealtimeForTable('notifications')
+      .then(() => console.log('Realtime enabled for notifications'))
+      .catch(err => console.error('Error enabling realtime:', err));
+
     // This channel listens for all notification inserts
     const channel = supabase
       .channel('notifications-channel')
@@ -127,20 +159,19 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
           schema: 'public',
           table: 'notifications'
         },
-        (payload) => {
-          const newNotification = payload.new as Notification;
-          console.log('Real-time notification received:', newNotification);
+        (payload: { new: Notification }) => {
+          console.log('Real-time notification received:', payload);
           
           // Add to local state if it's for this user or has no user_id (broadcast)
-          if (!newNotification.user_id || (user && newNotification.user_id === user.id)) {
-            console.log('Adding notification to state:', newNotification);
-            setNotifications(prev => [newNotification, ...prev]);
+          if (!payload.new.user_id || (user && payload.new.user_id === user.id)) {
+            console.log('Adding notification to state:', payload.new);
+            setNotifications(prev => [payload.new, ...prev]);
             
             // Show toast for all broadcasts or user-specific notifications
             toast(
-              newNotification.type === 'error' ? 'Error' : 'New Notification',
+              payload.new.type === 'error' ? 'Error' : 'New Notification',
               {
-                description: newNotification.message,
+                description: payload.new.message,
                 position: 'top-right',
                 duration: 5000,
               }
@@ -148,9 +179,9 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
             
             // Also use shadow toast for accessibility
             shadowToast({
-              title: newNotification.type === 'error' ? 'Error' : 'New Notification',
-              description: newNotification.message,
-              variant: newNotification.type === 'error' ? 'destructive' : 'default',
+              title: payload.new.type === 'error' ? 'Error' : 'New Notification',
+              description: payload.new.message,
+              variant: payload.new.type === 'error' ? 'destructive' : 'default',
             });
           }
         }
@@ -162,52 +193,64 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [toast, shadowToast, user]);
+  }, [user, shadowToast]);
 
   // Function for admin actions that create notifications
   const notifyAdminAction = useCallback(async (action: string, itemType: string, itemName: string) => {
     if (!user) return;
     
-    const message = `Admin ${user.email} ${action} ${itemType}: ${itemName}`;
+    console.log(`Admin action: ${action} ${itemType} ${itemName}`);
     
-    // Add to user's personal notifications
-    await addNotification({
-      message,
-      type: 'info',
-      user_id: user.id
-    });
-    
-    // For all submissions, broadcast to all users
-    await broadcastNotification(
-      `New ${itemType} "${itemName}" has been submitted by an administrator`,
-      'info'
-    );
+    try {
+      const message = `Admin ${user.email} ${action} ${itemType}: ${itemName}`;
+      
+      // Add to user's personal notifications
+      await addNotification({
+        message,
+        type: 'info',
+        user_id: user.id
+      });
+      
+      // For all submissions, broadcast to all users
+      await broadcastNotification(
+        `New ${itemType} "${itemName}" has been ${action} by an administrator`,
+        'info'
+      );
+    } catch (error) {
+      console.error('Error in notifyAdminAction:', error);
+    }
   }, [user, addNotification, broadcastNotification]);
   
   // Function for faculty actions that create notifications
   const notifyFacultyAction = useCallback(async (action: string, itemType: string, itemName: string) => {
     if (!user) return;
     
-    // Get faculty department info for better context
-    const department = user.user_metadata?.department || 'unknown department';
-    const departmentFormatted = department.split('_').map(word => 
-      word.charAt(0).toUpperCase() + word.slice(1)
-    ).join(' ');
-    
-    const message = `Faculty from ${departmentFormatted} ${action} ${itemType}: ${itemName}`;
-    
-    // Add to user's personal notifications
-    await addNotification({
-      message,
-      type: 'info',
-      user_id: user.id
-    });
-    
-    // For all submissions, broadcast to all users
-    await broadcastNotification(
-      `New ${itemType} "${itemName}" has been submitted from the ${departmentFormatted} department`,
-      'info'
-    );
+    try {
+      // Get faculty department info for better context
+      const department = user.user_metadata?.department || 'unknown department';
+      const departmentFormatted = department.split('_').map((word: string) => 
+        word.charAt(0).toUpperCase() + word.slice(1)
+      ).join(' ');
+      
+      console.log(`Faculty action from ${departmentFormatted}: ${action} ${itemType} ${itemName}`);
+      
+      const message = `Faculty from ${departmentFormatted} ${action} ${itemType}: ${itemName}`;
+      
+      // Add to user's personal notifications
+      await addNotification({
+        message,
+        type: 'info',
+        user_id: user.id
+      });
+      
+      // For all submissions, broadcast to all users
+      await broadcastNotification(
+        `New ${itemType} "${itemName}" has been submitted from the ${departmentFormatted} department`,
+        'info'
+      );
+    } catch (error) {
+      console.error('Error in notifyFacultyAction:', error);
+    }
   }, [user, addNotification, broadcastNotification]);
 
   return (

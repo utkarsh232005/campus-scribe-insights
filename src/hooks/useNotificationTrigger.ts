@@ -61,14 +61,18 @@ export const useNotificationTrigger = ({ tableName, itemType }: UseNotificationT
           }
           
           // Trigger appropriate notification based on user role
-          if (isAdmin) {
-            notifyAdminAction('added', itemType, itemName)
-              .then(() => console.log(`Admin notification sent for ${itemName}`))
-              .catch(e => console.error("Error sending admin notification:", e));
-          } else {
-            notifyFacultyAction('added', itemType, itemName)
-              .then(() => console.log(`Faculty notification sent for ${itemName}`))
-              .catch(e => console.error("Error sending faculty notification:", e));
+          try {
+            if (isAdmin) {
+              notifyAdminAction('added', itemType, itemName)
+                .then(() => console.log(`Admin notification sent for ${itemName}`))
+                .catch(e => console.error("Error sending admin notification:", e));
+            } else {
+              notifyFacultyAction('added', itemType, itemName)
+                .then(() => console.log(`Faculty notification sent for ${itemName}`))
+                .catch(e => console.error("Error sending faculty notification:", e));
+            }
+          } catch (error) {
+            console.error("Error sending notification:", error);
           }
         }
       )
