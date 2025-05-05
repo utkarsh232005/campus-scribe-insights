@@ -48,11 +48,9 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
         throw error;
       } else {
         console.log('Notification added successfully:', data);
-        return data;
       }
     } catch (error) {
       console.error('Error in addNotification:', error);
-      throw error;
     }
   }, [user]);
 
@@ -112,10 +110,8 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
         type,
         // Omitting user_id makes this a broadcast notification
       });
-      return true;
     } catch (error) {
       console.error('Error broadcasting notification:', error);
-      return false;
     }
   }, [addNotification]);
 
@@ -201,24 +197,19 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
     const message = `Faculty from ${departmentFormatted} ${action} ${itemType}: ${itemName}`;
     
     // Add to user's personal notifications
-    const personalNotification = await addNotification({
+    await addNotification({
       message,
       type: 'info',
       user_id: user.id
     });
     
-    console.log('Personal notification added:', personalNotification);
-    
     // For all submissions, broadcast to all users
-    const broadcastResult = await broadcastNotification(
+    await broadcastNotification(
       `New ${itemType} "${itemName}" has been submitted from the ${departmentFormatted} department`,
       'info'
     );
-    
-    console.log('Broadcast notification result:', broadcastResult);
   }, [user, addNotification, broadcastNotification]);
 
-  // Expose loading state as part of the context value
   return (
     <NotificationContext.Provider value={{ 
       notifications, 

@@ -26,9 +26,21 @@ import UserManagement from "./pages/admin/UserManagement";
 import PrivateRoute from "./components/auth/PrivateRoute";
 import AdminRoute from "./components/auth/AdminRoute";
 import Profile from "./pages/Profile";
-import FacultyProjectPage from "./pages/FacultyProjectPage"; // Add the new page
+import FacultyProjectPage from "./pages/FacultyProjectPage";
+import { useAuth } from './context/AuthContext';
 
 const queryClient = new QueryClient();
+
+// Special component to handle logout
+const LogoutRoute = () => {
+  const { signOut } = useAuth();
+  
+  React.useEffect(() => {
+    signOut();
+  }, [signOut]);
+  
+  return <Navigate to="/" replace />;
+};
 
 const AppWithProviders = () => (
   <QueryClientProvider client={queryClient}>
@@ -74,19 +86,5 @@ const AppWithProviders = () => (
     </TooltipProvider>
   </QueryClientProvider>
 );
-
-// Special component to handle logout
-const LogoutRoute = () => {
-  const { signOut } = useAuth();
-  
-  React.useEffect(() => {
-    signOut();
-  }, [signOut]);
-  
-  return <Navigate to="/" replace />;
-};
-
-// Import at the top
-import { useAuth } from './context/AuthContext';
 
 export default AppWithProviders;
