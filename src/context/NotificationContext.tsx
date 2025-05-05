@@ -21,24 +21,41 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
   const { toast: shadowToast } = useToast();
   const { user, isAdmin } = useAuth();
 
-  // Fetch existing notifications on component mount
+  // Fetch existing notifications on component mount or when user changes
   useEffect(() => {
     if (user) {
       const fetchNotifications = async () => {
-        const { data, error } = await supabase
-          .from('notifications')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(20);
+        try {
+          // First fetch user-specific notifications
+          const { data: userNotifications, error: userError } = await supabase
+            .from('notifications')
+            .select('*')
+            .or(`user_id.eq.${user.id},user_id.is.null`) // Get both user-specific and broadcast notifications
+            .order('created_at', { ascending: false })
+            .limit(50);
+            
+          if (userError) {
+            console.error('Error fetching notifications:', userError);
+            return;
+          }
           
-        if (error) {
-          console.error('Error fetching notifications:', error);
-        } else if (data) {
-          setNotifications(data);
+          if (userNotifications) {
+            // Sort by created_at in descending order to show newest first
+            const sortedNotifications = userNotifications.sort((a, b) => {
+              return new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime();
+            });
+            
+            setNotifications(sortedNotifications);
+          }
+        } catch (error) {
+          console.error('Error in fetchNotifications:', error);
         }
       };
       
       fetchNotifications();
+    } else {
+      // Clear notifications when user logs out
+      setNotifications([]);
     }
   }, [user]);
   
@@ -60,10 +77,8 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
           // Add to local state if it's for this user or has no user_id (broadcast)
           if (!newNotification.user_id || (user && newNotification.user_id === user.id)) {
             setNotifications(prev => [newNotification, ...prev]);
-          }
-          
-          // Show toast for all broadcasts or user-specific notifications
-          if (!newNotification.user_id || (user && newNotification.user_id === user.id)) {
+            
+            // Show toast for all broadcasts or user-specific notifications
             // Use sonner toast for a better UX
             toast(
               newNotification.type === 'error' ? 'Error' : 'New Notification',
@@ -138,13 +153,11 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
       user_id: user.id
     });
     
-    // For report submissions, broadcast to all users
-    if (itemType === 'report' && action === 'added') {
-      await broadcastNotification(
-        `New report "${itemName}" has been submitted by an administrator`,
-        'info'
-      );
-    }
+    // For all submissions, broadcast to all users
+    await broadcastNotification(
+      `New ${itemType} "${itemName}" has been submitted by an administrator`,
+      'info'
+    );
   };
   
   // Function for faculty actions that create notifications
@@ -166,13 +179,11 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
       user_id: user.id
     });
     
-    // For report submissions, broadcast to all users
-    if (itemType === 'report' && action === 'added') {
-      await broadcastNotification(
-        `New report "${itemName}" has been submitted from the ${departmentFormatted} department`,
-        'info'
-      );
-    }
+    // For all submissions, broadcast to all users
+    await broadcastNotification(
+      `New ${itemType} "${itemName}" has been submitted from the ${departmentFormatted} department`,
+      'info'
+    );
   };
 
   return (
