@@ -148,8 +148,8 @@ const Dashboard = () => {
         delay: 0.3
       }}>
           <Card>
-            <CardContent className="pt-6">
-              <h3 className="text-lg font-medium mb-4">Publication Analytics</h3>
+            <CardContent className="pt-6 bg-gray-900 rounded-none py-[8px]">
+              <h3 className="text-lg font-medium mb-4 text-zinc-50">Publication Analytics</h3>
               <ReportChart title="Publication Trends" type="line" data={chartData} dataKeys={chartDataKeys} />
             </CardContent>
           </Card>
