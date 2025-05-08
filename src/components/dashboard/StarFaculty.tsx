@@ -1,8 +1,6 @@
-
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-
 interface FacultyMember {
   id: string;
   name: string;
@@ -11,21 +9,16 @@ interface FacultyMember {
   percentile: string;
   year: number;
 }
-
 interface StarFacultyProps {
   title: string;
   faculty: FacultyMember[];
 }
-
 const StarFaculty = ({
   title,
   faculty
 }: StarFacultyProps) => {
-  return (
-    <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl shadow-lg overflow-hidden">
-      <div className="px-6 py-4 border-b border-white/20 flex justify-between items-center bg-gradient-to-r from-purple-600/20 to-purple-400/20">
-        <h3 className="text-lg font-semibold text-slate-50">{title}</h3>
-      </div>
+  return <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl shadow-lg overflow-hidden">
+      
       
       <div className="overflow-x-auto">
         <Table>
@@ -39,11 +32,7 @@ const StarFaculty = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {faculty.map(member => (
-              <TableRow 
-                key={`${member.id}-${member.year}`} 
-                className="hover:bg-purple-600/10 transition-colors"
-              >
+            {faculty.map(member => <TableRow key={`${member.id}-${member.year}`} className="hover:bg-purple-600/10 transition-colors">
                 <TableCell className="text-slate-300 font-medium">{member.id}</TableCell>
                 <TableCell>
                   <div className="flex items-center">
@@ -59,13 +48,10 @@ const StarFaculty = ({
                 <TableCell className="text-right text-slate-300">{member.publications}</TableCell>
                 <TableCell className="text-right text-slate-300">{member.percentile}</TableCell>
                 <TableCell className="text-right text-slate-300">{member.year}</TableCell>
-              </TableRow>
-            ))}
+              </TableRow>)}
           </TableBody>
         </Table>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default StarFaculty;

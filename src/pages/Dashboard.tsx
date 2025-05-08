@@ -136,7 +136,7 @@ const Dashboard = () => {
           </div>)}
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 px-[12px] mx-[23px] py-[18px] my-[9px]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 mx-[23px] py-[18px] my-[9px] px-[10px]">
         <motion.div className="lg:col-span-2" initial={{
         opacity: 0,
         y: 20
@@ -155,18 +155,7 @@ const Dashboard = () => {
           </Card>
         </motion.div>
         
-        <motion.div initial={{
-        opacity: 0,
-        y: 20
-      }} animate={{
-        opacity: 1,
-        y: 0
-      }} transition={{
-        duration: 0.5,
-        delay: 0.4
-      }}>
-          <StarFaculty title="Star Faculty Members" faculty={facultyData} />
-        </motion.div>
+        
       </div>
       
       <motion.div initial={{
