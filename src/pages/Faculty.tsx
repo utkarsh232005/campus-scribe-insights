@@ -12,6 +12,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { GlowingEffect } from '@/components/ui/glowing-effect';
+
 interface FacultyMember {
   id: string;
   name: string;
@@ -251,44 +253,54 @@ const FacultyPage = () => {
             animation: 'slideIn 0.5s ease forwards',
             opacity: 0
           }}>
-                    <Card className={`border-l-4 ${DepartmentColors[department]} overflow-hidden shadow-lg backdrop-blur-sm`}>
-                      <CardHeader className="flex flex-row items-center gap-4 pb-2 bg-gray-900">
-                        <Avatar className="h-16 w-16 border-2 border-white/10">
-                          <AvatarImage src={faculty.photo_url || defaultAvatar} alt={faculty.name} />
-                          <AvatarFallback className="bg-blue-800/50 text-blue-100">
-                            {faculty.name?.charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <CardTitle className="text-xl text-gray-50">{faculty.name}</CardTitle>
-                          <p className="text-sm text-blue-300/80">{faculty.position}</p>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="bg-gray-900">
-                        <p className="mb-2 line-clamp-2 text-sm text-gray-50">
-                          {faculty.bio || "No biography available."}
-                        </p>
-                        
-                        {faculty.research_interests && faculty.research_interests.length > 0 && <div className="mt-2">
-                            <p className="font-semibold text-xs mb-1 text-gray-400">Research Interests:</p>
-                            <div className="flex flex-wrap gap-1 bg-gray-900">
-                              {faculty.research_interests.map(interest => <Badge key={interest} variant="outline" className="text-xs bg-gray-50">
-                                  {interest}
-                                </Badge>)}
-                            </div>
-                          </div>}
-                      </CardContent>
-                      <CardFooter className="border-t border-gray-800 pt-3 flex justify-between bg-gray-900">
-                        {faculty.publications !== undefined && <div className="flex items-center text-xs text-gray-400">
-                            <BookOpen className="h-3 w-3 mr-1" />
-                            <span className="text-cyan-300">{faculty.publications} publications</span>
-                          </div>}
-                        {faculty.email && <div className="flex items-center text-xs text-blue-400 hover:text-blue-300 transition-colors">
-                            <Paperclip className="h-3 w-3 mr-1" />
-                            <a href={`mailto:${faculty.email}`}>Contact</a>
-                          </div>}
-                      </CardFooter>
-                    </Card>
+                    <div className="relative">
+                      <Card className={`border-l-4 ${DepartmentColors[department]} overflow-hidden shadow-lg backdrop-blur-sm`}>
+                        <CardHeader className="flex flex-row items-center gap-4 pb-2 bg-gray-900">
+                          <Avatar className="h-16 w-16 border-2 border-white/10">
+                            <AvatarImage src={faculty.photo_url || defaultAvatar} alt={faculty.name} />
+                            <AvatarFallback className="bg-blue-800/50 text-blue-100">
+                              {faculty.name?.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <CardTitle className="text-xl text-gray-50">{faculty.name}</CardTitle>
+                            <p className="text-sm text-blue-300/80">{faculty.position}</p>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="bg-gray-900">
+                          <p className="mb-2 line-clamp-2 text-sm text-gray-50">
+                            {faculty.bio || "No biography available."}
+                          </p>
+                          
+                          {faculty.research_interests && faculty.research_interests.length > 0 && <div className="mt-2">
+                              <p className="font-semibold text-xs mb-1 text-gray-400">Research Interests:</p>
+                              <div className="flex flex-wrap gap-1 bg-gray-900">
+                                {faculty.research_interests.map(interest => <Badge key={interest} variant="outline" className="text-xs bg-gray-50">
+                                    {interest}
+                                  </Badge>)}
+                              </div>
+                            </div>}
+                        </CardContent>
+                        <CardFooter className="border-t border-gray-800 pt-3 flex justify-between bg-gray-900">
+                          {faculty.publications !== undefined && <div className="flex items-center text-xs text-gray-400">
+                              <BookOpen className="h-3 w-3 mr-1" />
+                              <span className="text-cyan-300">{faculty.publications} publications</span>
+                            </div>}
+                          {faculty.email && <div className="flex items-center text-xs text-blue-400 hover:text-blue-300 transition-colors">
+                              <Paperclip className="h-3 w-3 mr-1" />
+                              <a href={`mailto:${faculty.email}`}>Contact</a>
+                            </div>}
+                        </CardFooter>
+                      </Card>
+                      <GlowingEffect 
+                        disabled={false}
+                        spread={30} 
+                        glow={true} 
+                        blur={8}
+                        variant={department === "computer_science" ? "default" : "white"}
+                        className="absolute inset-0 rounded-lg"
+                      />
+                    </div>
                   </div>)}
               </div>
             </div>)}
