@@ -1,12 +1,13 @@
+
 import React from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import StatCard from '@/components/dashboard/StatCard';
 import ActivityList from '@/components/dashboard/ActivityList';
-import StarFaculty from '@/components/dashboard/StarFaculty';
 import ReportChart from '@/components/dashboard/ReportChart';
 import { Card, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { Users, FileText, DollarSign, Award } from 'lucide-react';
+import { Users, FileText, DollarSign, Award, GraduationCap } from 'lucide-react';
+
 const Dashboard = () => {
   // Mock data for components
   const facultyData = [{
@@ -31,6 +32,7 @@ const Dashboard = () => {
     year: 2023,
     avatar: "/placeholder.svg"
   }];
+  
   const activitiesData = [{
     id: 1,
     title: "Research Paper Published",
@@ -53,6 +55,7 @@ const Dashboard = () => {
     iconColor: "bg-yellow-500/20",
     date: "3 days ago"
   }];
+  
   const chartData = [{
     name: "Jan",
     journals: 10,
@@ -78,6 +81,7 @@ const Dashboard = () => {
     journals: 22,
     conferences: 15
   }];
+  
   const chartDataKeys = [{
     key: "journals",
     color: "#4f46e5",
@@ -87,18 +91,69 @@ const Dashboard = () => {
     color: "#06b6d4",
     name: "Conference Papers"
   }];
-  return <DashboardLayout>
+
+  // New data for student growth chart
+  const studentGrowthData = [
+    {
+      name: "2020",
+      engineering: 120,
+      arts: 80,
+      science: 100,
+      business: 90,
+      medicine: 70
+    },
+    {
+      name: "2021",
+      engineering: 150,
+      arts: 90,
+      science: 120,
+      business: 110,
+      medicine: 85
+    },
+    {
+      name: "2022",
+      engineering: 180,
+      arts: 100,
+      science: 145,
+      business: 130,
+      medicine: 100
+    },
+    {
+      name: "2023",
+      engineering: 210,
+      arts: 110,
+      science: 160,
+      business: 150,
+      medicine: 120
+    },
+    {
+      name: "2024",
+      engineering: 240,
+      arts: 130,
+      science: 180,
+      business: 170,
+      medicine: 140
+    }
+  ];
+
+  const studentGrowthDataKeys = [
+    { key: "engineering", color: "#4f46e5", name: "Engineering" },
+    { key: "arts", color: "#ec4899", name: "Arts" },
+    { key: "science", color: "#06b6d4", name: "Science" },
+    { key: "business", color: "#f59e0b", name: "Business" },
+    { key: "medicine", color: "#10b981", name: "Medicine" }
+  ];
+  
+  return (
+    <DashboardLayout>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <motion.h1 initial={{
-          opacity: 0,
-          y: -20
-        }} animate={{
-          opacity: 1,
-          y: 0
-        }} transition={{
-          duration: 0.5
-        }} className="text-2xl font-bold text-zinc-50">
+          <motion.h1 
+            initial={{ opacity: 0, y: -20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            transition={{ duration: 0.5 }}
+            className="text-2xl font-bold text-zinc-50"
+          >
             Faculty Dashboard
           </motion.h1>
           <div className="flex items-center text-sm text-gray-500">
@@ -110,66 +165,87 @@ const Dashboard = () => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        {/* Using the standard div with map approach for stat cards */}
         {[{
-        title: "Faculty Members",
-        value: "42",
-        icon: <Users className="h-4 w-4 text-white" />,
-        iconBg: "bg-blue-600"
-      }, {
-        title: "Publications",
-        value: "156",
-        icon: <FileText className="h-4 w-4 text-white" />,
-        iconBg: "bg-green-600"
-      }, {
-        title: "Research Grants",
-        value: "$2.4M",
-        icon: <DollarSign className="h-4 w-4 text-white" />,
-        iconBg: "bg-yellow-600"
-      }, {
-        title: "Awards",
-        value: "24",
-        icon: <Award className="h-4 w-4 text-white" />,
-        iconBg: "bg-purple-600"
-      }].map((card, index) => <div key={card.title}>
-            <StatCard title={card.title} value={card.value} icon={card.icon} iconBg={card.iconBg} />
-          </div>)}
+          title: "Faculty Members",
+          value: "42",
+          icon: <Users className="h-4 w-4 text-white" />,
+          iconBg: "bg-blue-600"
+        }, {
+          title: "Publications",
+          value: "156",
+          icon: <FileText className="h-4 w-4 text-white" />,
+          iconBg: "bg-green-600"
+        }, {
+          title: "Research Grants",
+          value: "$2.4M",
+          icon: <DollarSign className="h-4 w-4 text-white" />,
+          iconBg: "bg-yellow-600"
+        }, {
+          title: "Awards",
+          value: "24",
+          icon: <Award className="h-4 w-4 text-white" />,
+          iconBg: "bg-purple-600"
+        }].map((card, index) => (
+          <div key={card.title}>
+            <StatCard 
+              title={card.title} 
+              value={card.value} 
+              icon={card.icon} 
+              iconBg={card.iconBg} 
+            />
+          </div>
+        ))}
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 mx-[23px] py-[18px] my-[9px] px-[10px]">
-        <motion.div className="lg:col-span-2" initial={{
-        opacity: 0,
-        y: 20
-      }} animate={{
-        opacity: 1,
-        y: 0
-      }} transition={{
-        duration: 0.5,
-        delay: 0.3
-      }}>
-          <Card>
-            <CardContent className="pt-6 bg-gray-900 rounded-none py-[8px]">
-              <h3 className="text-lg font-medium mb-4 text-zinc-50">Publication Analytics</h3>
-              <ReportChart title="Publication Trends" type="line" data={chartData} dataKeys={chartDataKeys} />
-            </CardContent>
-          </Card>
-        </motion.div>
-        
-        
-      </div>
+      {/* Publication Analytics Chart - Made wider by using full width (removed grid) */}
+      <motion.div 
+        className="mb-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+      >
+        <Card>
+          <CardContent className="pt-6 bg-gray-900 rounded-none py-8">
+            <h3 className="text-lg font-medium mb-4 text-zinc-50">Publication Analytics</h3>
+            <ReportChart 
+              title="Publication Trends" 
+              type="line" 
+              data={chartData} 
+              dataKeys={chartDataKeys} 
+            />
+          </CardContent>
+        </Card>
+      </motion.div>
       
-      <motion.div initial={{
-      opacity: 0,
-      y: 20
-    }} animate={{
-      opacity: 1,
-      y: 0
-    }} transition={{
-      duration: 0.5,
-      delay: 0.5
-    }}>
+      {/* New Student Growth Chart */}
+      <motion.div 
+        className="mb-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.5 }}
+      >
+        <Card>
+          <CardContent className="pt-6 bg-gray-900 rounded-none py-8">
+            <h3 className="text-lg font-medium mb-4 text-zinc-50">Student Growth by Department</h3>
+            <ReportChart 
+              title="Student Enrollment Trends" 
+              type="line" 
+              data={studentGrowthData} 
+              dataKeys={studentGrowthDataKeys} 
+            />
+          </CardContent>
+        </Card>
+      </motion.div>
+      
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        transition={{ duration: 0.5, delay: 0.7 }}
+      >
         <ActivityList title="Recent Activities" activities={activitiesData} />
       </motion.div>
-    </DashboardLayout>;
+    </DashboardLayout>
+  );
 };
+
 export default Dashboard;
