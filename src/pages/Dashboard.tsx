@@ -6,9 +6,58 @@ import ActivityList from '@/components/dashboard/ActivityList';
 import StarFaculty from '@/components/dashboard/StarFaculty';
 import ReportChart from '@/components/dashboard/ReportChart';
 import { Card, CardContent } from '@/components/ui/card';
-import { motion } from 'motion';
+import { motion } from 'framer-motion';
+import { Users, FileText, DollarSign, Award } from 'lucide-react';
 
 const Dashboard = () => {
+  // Mock data for components
+  const facultyData = [
+    { id: "F001", name: "Dr. Smith", publications: 24, percentile: "95%", year: 2023, avatar: "/placeholder.svg" },
+    { id: "F002", name: "Dr. Johnson", publications: 18, percentile: "87%", year: 2023, avatar: "/placeholder.svg" },
+    { id: "F003", name: "Dr. Williams", publications: 15, percentile: "82%", year: 2023, avatar: "/placeholder.svg" },
+  ];
+
+  const activitiesData = [
+    { 
+      id: 1, 
+      title: "Research Paper Published", 
+      description: "Dr. Johnson published a new paper in Nature", 
+      icon: <FileText size={16} />, 
+      iconColor: "bg-blue-500/20", 
+      date: "Today" 
+    },
+    { 
+      id: 2, 
+      title: "Faculty Meeting", 
+      description: "Monthly department meeting scheduled", 
+      icon: <Users size={16} />, 
+      iconColor: "bg-green-500/20", 
+      date: "Tomorrow" 
+    },
+    { 
+      id: 3, 
+      title: "Grant Approved", 
+      description: "$250,000 research grant approved", 
+      icon: <DollarSign size={16} />, 
+      iconColor: "bg-yellow-500/20", 
+      date: "3 days ago" 
+    },
+  ];
+
+  const chartData = [
+    { name: "Jan", journals: 10, conferences: 5 },
+    { name: "Feb", journals: 15, conferences: 8 },
+    { name: "Mar", journals: 12, conferences: 7 },
+    { name: "Apr", journals: 18, conferences: 10 },
+    { name: "May", journals: 20, conferences: 12 },
+    { name: "Jun", journals: 22, conferences: 15 },
+  ];
+
+  const chartDataKeys = [
+    { key: "journals", color: "#4f46e5", name: "Journal Papers" },
+    { key: "conferences", color: "#06b6d4", name: "Conference Papers" },
+  ];
+
   return (
     <DashboardLayout>
       <div className="flex justify-between items-center mb-6">
@@ -38,9 +87,8 @@ const Dashboard = () => {
           <StatCard 
             title="Faculty Members"
             value="42"
-            change="+3"
-            trend="up"
-            icon="users"
+            icon={<Users className="h-4 w-4 text-white" />}
+            iconBg="bg-blue-600"
           />
         </motion.div>
         
@@ -52,9 +100,8 @@ const Dashboard = () => {
           <StatCard 
             title="Publications"
             value="156"
-            change="+12"
-            trend="up"
-            icon="file-text"
+            icon={<FileText className="h-4 w-4 text-white" />}
+            iconBg="bg-green-600"
           />
         </motion.div>
         
@@ -66,9 +113,8 @@ const Dashboard = () => {
           <StatCard 
             title="Research Grants"
             value="$2.4M"
-            change="+$320K"
-            trend="up"
-            icon="dollar-sign"
+            icon={<DollarSign className="h-4 w-4 text-white" />}
+            iconBg="bg-yellow-600"
           />
         </motion.div>
         
@@ -80,9 +126,8 @@ const Dashboard = () => {
           <StatCard 
             title="Awards"
             value="24"
-            change="+2"
-            trend="up"
-            icon="award"
+            icon={<Award className="h-4 w-4 text-white" />}
+            iconBg="bg-purple-600"
           />
         </motion.div>
       </div>
@@ -97,7 +142,12 @@ const Dashboard = () => {
           <Card>
             <CardContent className="pt-6">
               <h3 className="text-lg font-medium mb-4">Publication Analytics</h3>
-              <ReportChart />
+              <ReportChart 
+                title="Publication Trends"
+                type="line"
+                data={chartData}
+                dataKeys={chartDataKeys}
+              />
             </CardContent>
           </Card>
         </motion.div>
@@ -107,7 +157,10 @@ const Dashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
         >
-          <StarFaculty />
+          <StarFaculty 
+            title="Star Faculty Members"
+            faculty={facultyData}
+          />
         </motion.div>
       </div>
       
@@ -116,7 +169,10 @@ const Dashboard = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.5 }}
       >
-        <ActivityList />
+        <ActivityList 
+          title="Recent Activities"
+          activities={activitiesData}
+        />
       </motion.div>
     </DashboardLayout>
   );
