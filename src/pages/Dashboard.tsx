@@ -136,7 +136,7 @@ const Dashboard = () => {
           </div>)}
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 px-0">
         <motion.div className="lg:col-span-2" initial={{
         opacity: 0,
         y: 20
