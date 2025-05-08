@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import { useNotifications } from '@/context/NotificationContext';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, enableRealtimeForTable } from '@/integrations/supabase/client';
 
 interface UseNotificationTriggerProps {
   tableName: string;
@@ -23,23 +23,16 @@ export const useNotificationTrigger = ({ tableName, itemType }: UseNotificationT
       try {
         console.log(`Attempting to enable realtime for ${tableName}`);
         
-        // Try direct SQL approach first (admin only)
-        if (isAdmin) {
-          const { error } = await supabase.rpc('enable_realtime_for_table', {
-            table_name: tableName,
-          });
-          
-          if (error) {
-            console.error(`Error enabling realtime for ${tableName}:`, error);
-          } else {
-            console.log(`Successfully enabled realtime for ${tableName}`);
-          }
+        // Try to enable realtime for the table
+        const result = await enableRealtimeForTable(tableName);
+        if (!result.success) {
+          console.error(`Error enabling realtime for ${tableName}:`, result.error);
+        } else {
+          console.log(`Successfully enabled realtime for ${tableName}`);
         }
         
         // Also ensure notifications table has realtime enabled
-        await supabase.rpc('enable_realtime_for_table', {
-          table_name: 'notifications',
-        });
+        await enableRealtimeForTable('notifications');
       } catch (err) {
         console.error('Failed to set up replication:', err);
       }

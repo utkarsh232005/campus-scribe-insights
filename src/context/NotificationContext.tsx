@@ -1,8 +1,7 @@
-
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { toast } from '@/components/ui/sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, enableRealtimeForTable } from '@/integrations/supabase/client';
 import { Notification } from '@/types/user';
 import { useAuth } from './AuthContext';
 
@@ -102,10 +101,9 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
       fetchNotifications();
       
       // Try to enable realtime for the notifications table
-      supabase.rpc('enable_realtime_for_table', { table_name: 'notifications' })
+      enableRealtimeForTable('notifications')
         .then(() => console.log('Enabled realtime for notifications table'))
         .catch(err => console.error('Failed to enable realtime:', err));
-      
     } else {
       setNotifications([]);
     }

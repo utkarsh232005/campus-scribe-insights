@@ -6,6 +6,15 @@ import type { Database } from './types';
 const SUPABASE_URL = "https://woulrjxckivziwsjzzvf.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndvdWxyanhja2l2eml3c2p6enZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU1ODI0MDEsImV4cCI6MjA2MTE1ODQwMX0.28cKwiZ6llYtOSzOaC4CLed6dRbQMEFT__QHl8KfR5M";
 
+// Create the Supabase client first so we can use it in other functions
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  realtime: {
+    params: {
+      eventsPerSecond: 10,
+    },
+  },
+});
+
 // Helper function to check admin status
 export const checkAdminStatus = async (email: string) => {
   try {
@@ -25,50 +34,25 @@ export const enableRealtimeForTable = async (tableName: string) => {
   try {
     console.log(`Attempting to enable realtime for ${tableName} table`);
     
-    // Use direct SQL approach
-    const { data, error } = await supabase
-      .from('_exec_sql')
-      .select('*')
-      .eq('query', `ALTER PUBLICATION supabase_realtime ADD TABLE ${tableName}`);
-    
-    if (error) {
-      console.error(`Error enabling realtime directly for ${tableName}:`, error);
-      console.log('Attempting to use RPC method as fallback');
+    // Use the RPC method to enable realtime
+    try {
+      const { error } = await supabase.rpc('enable_realtime_for_table', {
+        table_name: tableName,
+      });
       
-      // Try to enable realtime using the function if the direct approach fails
-      try {
-        const { error: rpcError } = await supabase.rpc('enable_realtime_for_table', {
-          table_name: tableName,
-        });
-        
-        if (rpcError) {
-          console.error('Error enabling realtime with RPC method:', rpcError);
-          return { success: false, error: rpcError };
-        }
-        
-        console.log(`Successfully enabled realtime for ${tableName} using RPC`);
-        return { success: true };
-      } catch (e) {
-        console.error('RPC method failed:', e);
-        return { success: false, error: e };
+      if (error) {
+        console.error('Error enabling realtime with RPC method:', error);
+        return { success: false, error };
       }
+      
+      console.log(`Successfully enabled realtime for ${tableName} using RPC`);
+      return { success: true };
+    } catch (e) {
+      console.error('RPC method failed:', e);
+      return { success: false, error: e };
     }
-    
-    console.log(`Successfully enabled realtime for ${tableName}`);
-    return { success: true };
   } catch (error) {
     console.error(`Error enabling realtime for ${tableName}:`, error);
     return { success: false, error };
   }
 };
-
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
-
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  realtime: {
-    params: {
-      eventsPerSecond: 10,
-    },
-  },
-});

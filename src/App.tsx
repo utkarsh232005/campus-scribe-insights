@@ -10,7 +10,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "@/components/ui/sonner"
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
-import Dashboard from './pages/Dashboard';
+import Dashboard from '@/pages/Dashboard';
 import Faculty from './pages/Faculty';
 import Awards from './pages/Awards';
 import Calendar from './pages/Calendar';
