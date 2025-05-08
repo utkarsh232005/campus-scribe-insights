@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -43,9 +44,9 @@ const ReportForm = () => {
   const navigate = useNavigate();
   const [userDepartment, setUserDepartment] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const { notifyFacultyAction, addNotification } = useNotifications();
+  const { addNotification, notifyFacultyAction } = useNotifications();
   
-  React.useEffect(() => {
+  useEffect(() => {
     async function getUserDepartment() {
       try {
         // Get the current user's auth data
@@ -126,10 +127,9 @@ const ReportForm = () => {
       }
       
       // Use the original department value for database storage
-      // This is important for RLS policies and consistency
       console.log("Submitting report with user_id:", user.id, "department:", userDepartment);
       
-      // Insert report with the original department value (not formatted)
+      // Insert report
       const { data: report, error } = await supabase
         .from('reports')
         .insert({
@@ -152,31 +152,48 @@ const ReportForm = () => {
       }
 
       console.log("Report submitted successfully:", report);
+      
+      // Format department name for display
+      const dept = userDepartment.split('_').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1)
+      ).join(' ');
 
-      // Send notification directly using addNotification first
-      try {
-        const dept = userDepartment.split('_').map(word => 
-          word.charAt(0).toUpperCase() + word.slice(1)
-        ).join(' ');
-        
-        await addNotification({
+      // Create notification directly in the database for immediate effect
+      const { data: notificationData, error: notifError } = await supabase
+        .from('notifications')
+        .insert({
           message: `New report "${data.title}" submitted from ${dept} department`,
           type: 'info',
-          // No user_id makes this a broadcast to all users
+          created_at: new Date().toISOString()
+          // No user_id makes this a broadcast
+        })
+        .select();
+        
+      if (notifError) {
+        console.error("Error creating direct notification:", notifError);
+      } else {
+        console.log("Direct notification created:", notificationData);
+      }
+      
+      // Also add user-specific notification
+      const { error: userNotifError } = await supabase
+        .from('notifications')
+        .insert({
+          message: `You have submitted report: "${data.title}"`,
+          type: 'info',
+          user_id: user.id,
+          created_at: new Date().toISOString()
         });
         
-        console.log("Direct notification created");
-      } catch (notifError) {
-        console.error("Error sending direct notification:", notifError);
+      if (userNotifError) {
+        console.error("Error creating user notification:", userNotifError);
       }
-
-      // Then use the notifyFacultyAction method as a backup
+      
+      // Also use the helper functions as a backup approach
       try {
-        console.log("Triggering faculty action notification");
         await notifyFacultyAction('submitted', 'report', data.title);
-        console.log("Faculty notification triggered successfully");
-      } catch (notifError) {
-        console.error("Error sending faculty notifications:", notifError);
+      } catch (err) {
+        console.error("Error with notification helper:", err);
       }
 
       toast({

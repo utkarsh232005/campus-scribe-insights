@@ -25,21 +25,36 @@ export const enableRealtimeForTable = async (tableName: string) => {
   try {
     console.log(`Attempting to enable realtime for ${tableName} table`);
     
-    // Use raw query approach since RPC may not be available
-    try {
-      // Try to enable realtime using the function if it exists
-      const { error } = await supabase.rpc('enable_realtime_for_table', {
-        table_name: tableName,
-      });
+    // Use direct SQL approach
+    const { data, error } = await supabase
+      .from('_exec_sql')
+      .select('*')
+      .eq('query', `ALTER PUBLICATION supabase_realtime ADD TABLE ${tableName}`);
+    
+    if (error) {
+      console.error(`Error enabling realtime directly for ${tableName}:`, error);
+      console.log('Attempting to use RPC method as fallback');
       
-      if (error) {
-        console.log('Error enabling realtime with RPC method:', error);
-        console.log('This is normal if the function is not yet available');
+      // Try to enable realtime using the function if the direct approach fails
+      try {
+        const { error: rpcError } = await supabase.rpc('enable_realtime_for_table', {
+          table_name: tableName,
+        });
+        
+        if (rpcError) {
+          console.error('Error enabling realtime with RPC method:', rpcError);
+          return { success: false, error: rpcError };
+        }
+        
+        console.log(`Successfully enabled realtime for ${tableName} using RPC`);
+        return { success: true };
+      } catch (e) {
+        console.error('RPC method failed:', e);
+        return { success: false, error: e };
       }
-    } catch (e) {
-      console.log('RPC method not found, this is expected in development:', e);
     }
     
+    console.log(`Successfully enabled realtime for ${tableName}`);
     return { success: true };
   } catch (error) {
     console.error(`Error enabling realtime for ${tableName}:`, error);

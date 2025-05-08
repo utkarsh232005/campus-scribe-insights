@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import { useNotifications } from '@/context/NotificationContext';
 import { useAuth } from '@/context/AuthContext';
-import { supabase, enableRealtimeForTable } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 
 interface UseNotificationTriggerProps {
   tableName: string;
@@ -18,23 +18,34 @@ export const useNotificationTrigger = ({ tableName, itemType }: UseNotificationT
 
     console.log(`Setting up notification trigger for ${tableName} table`);
     
-    // Enable PostgreSQL replication for this table if not already done
+    // Set up replication for the table
     const setupReplication = async () => {
       try {
         console.log(`Attempting to enable realtime for ${tableName}`);
-        const result = await enableRealtimeForTable(tableName);
-        console.log(`Realtime setup result for ${tableName}:`, result);
+        
+        // Try direct SQL approach first (admin only)
+        if (isAdmin) {
+          const { error } = await supabase.rpc('enable_realtime_for_table', {
+            table_name: tableName,
+          });
+          
+          if (error) {
+            console.error(`Error enabling realtime for ${tableName}:`, error);
+          } else {
+            console.log(`Successfully enabled realtime for ${tableName}`);
+          }
+        }
+        
+        // Also ensure notifications table has realtime enabled
+        await supabase.rpc('enable_realtime_for_table', {
+          table_name: 'notifications',
+        });
       } catch (err) {
         console.error('Failed to set up replication:', err);
       }
     };
     
     setupReplication();
-
-    // Also enable realtime for notifications table to ensure we can listen to new notifications
-    enableRealtimeForTable('notifications')
-      .then(result => console.log('Notifications table realtime setup:', result))
-      .catch(err => console.error('Failed to set up notifications realtime:', err));
 
     // Subscribe to changes in the specified table
     const channel = supabase
@@ -64,11 +75,9 @@ export const useNotificationTrigger = ({ tableName, itemType }: UseNotificationT
           try {
             if (isAdmin) {
               notifyAdminAction('added', itemType, itemName)
-                .then(() => console.log(`Admin notification sent for ${itemName}`))
                 .catch(e => console.error("Error sending admin notification:", e));
             } else {
               notifyFacultyAction('added', itemType, itemName)
-                .then(() => console.log(`Faculty notification sent for ${itemName}`))
                 .catch(e => console.error("Error sending faculty notification:", e));
             }
           } catch (error) {

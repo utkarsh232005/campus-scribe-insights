@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { toast } from '@/components/ui/sonner';
-import { supabase, enableRealtimeForTable } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { Notification } from '@/types/user';
 import { useAuth } from './AuthContext';
 
@@ -32,15 +32,13 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
       
       console.log('Adding notification:', notification);
       
-      // Make sure we have a created_at timestamp
-      const notificationWithTimestamp = {
-        ...notification,
-        created_at: new Date().toISOString(),
-      };
-      
+      // Insert notification with explicit created_at timestamp
       const { data, error } = await supabase
         .from('notifications')
-        .insert([notificationWithTimestamp])
+        .insert([{
+          ...notification,
+          created_at: new Date().toISOString()
+        }])
         .select();
 
       if (error) {
@@ -48,6 +46,13 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
         throw error;
       } else {
         console.log('Notification added successfully:', data);
+        
+        // Show immediate toast for better UX
+        toast(notification.type === 'error' ? 'Error' : 'New Notification', {
+          description: notification.message,
+          position: 'top-right',
+          duration: 5000,
+        });
       }
     } catch (error) {
       console.error('Error in addNotification:', error);
@@ -96,12 +101,11 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
     if (user?.id) {
       fetchNotifications();
       
-      // Enable realtime for the notifications table
-      enableRealtimeForTable('notifications')
-        .then(result => console.log('Notifications realtime setup:', result))
-        .catch(err => console.error('Failed to set up notifications realtime:', err));
+      // Try to enable realtime for the notifications table
+      supabase.rpc('enable_realtime_for_table', { table_name: 'notifications' })
+        .then(() => console.log('Enabled realtime for notifications table'))
+        .catch(err => console.error('Failed to enable realtime:', err));
       
-      // Clear notifications when user logs out
     } else {
       setNotifications([]);
     }
@@ -117,16 +121,15 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
       
       console.log('Broadcasting notification to all users:', message);
       
-      const notificationData = {
-        message,
-        type,
-        // Omitting user_id makes this a broadcast notification
-        created_at: new Date().toISOString(),
-      };
-      
+      // Insert into the notifications table
       const { data, error } = await supabase
         .from('notifications')
-        .insert([notificationData])
+        .insert([{
+          message,
+          type,
+          // Omitting user_id makes this a broadcast notification
+          created_at: new Date().toISOString(),
+        }])
         .select();
         
       if (error) {
@@ -140,15 +143,10 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
     }
   }, []);
 
-  // Subscribe to real-time notifications for ALL notifications
+  // Subscribe to real-time notifications
   useEffect(() => {
     if (!user) return;
     
-    // Enable realtime for notifications table
-    enableRealtimeForTable('notifications')
-      .then(() => console.log('Realtime enabled for notifications'))
-      .catch(err => console.error('Error enabling realtime:', err));
-
     // This channel listens for all notification inserts
     const channel = supabase
       .channel('notifications-channel')
@@ -253,14 +251,16 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
     }
   }, [user, addNotification, broadcastNotification]);
 
+  const contextValue = {
+    notifications,
+    addNotification,
+    notifyAdminAction,
+    notifyFacultyAction,
+    broadcastNotification
+  };
+
   return (
-    <NotificationContext.Provider value={{ 
-      notifications, 
-      addNotification,
-      notifyAdminAction,
-      notifyFacultyAction,
-      broadcastNotification
-    }}>
+    <NotificationContext.Provider value={contextValue}>
       {children}
     </NotificationContext.Provider>
   );

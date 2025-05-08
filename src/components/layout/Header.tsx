@@ -25,7 +25,8 @@ interface HeaderProps {
 }
 
 const Header = ({ user, isAdmin = false }: HeaderProps) => {
-  const { notifications } = useNotifications();
+  const notificationContext = useNotifications();
+  const notifications = notificationContext?.notifications || [];
   const [showNotifications, setShowNotifications] = useState(false);
   const [hasNewNotifications, setHasNewNotifications] = useState(false);
   const navigate = useNavigate();

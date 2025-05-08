@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   BrowserRouter,
@@ -5,7 +6,7 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from 'react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "@/components/ui/sonner"
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
@@ -14,17 +15,18 @@ import Faculty from './pages/Faculty';
 import Awards from './pages/Awards';
 import Calendar from './pages/Calendar';
 import Profile from './pages/Profile';
-import AdminDashboard from './pages/AdminDashboard';
-import UserManagement from './pages/UserManagement';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import UserManagement from './pages/admin/UserManagement';
 import AuthCallback from './pages/AuthCallback';
 import NotFound from './pages/NotFound';
 import LandingPage from './pages/LandingPage';
-import PrivateRoute from './components/PrivateRoute';
-import AdminRoute from './components/AdminRoute';
+import PrivateRoute from './components/auth/PrivateRoute';
+import AdminRoute from './components/auth/AdminRoute';
 import FacultyProjectPage from './pages/FacultyProjectPage';
 import ReportSubmission from './pages/ReportSubmission';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
+import Reports from './pages/Reports';
 
 const queryClient = new QueryClient();
 
@@ -72,7 +74,7 @@ const AppWithProviders = () => (
               path="/reports"
               element={
                 <PrivateRoute>
-                  <FacultyProjectPage />
+                  <Reports />
                 </PrivateRoute>
               }
             />
