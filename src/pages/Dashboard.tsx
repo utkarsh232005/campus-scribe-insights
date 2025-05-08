@@ -79,57 +79,22 @@ const Dashboard = () => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
-        >
-          <StatCard 
-            title="Faculty Members"
-            value="42"
-            icon={<Users className="h-4 w-4 text-white" />}
-            iconBg="bg-blue-600"
-          />
-        </motion.div>
-        
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.3, delay: 0.2 }}
-        >
-          <StatCard 
-            title="Publications"
-            value="156"
-            icon={<FileText className="h-4 w-4 text-white" />}
-            iconBg="bg-green-600"
-          />
-        </motion.div>
-        
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.3, delay: 0.3 }}
-        >
-          <StatCard 
-            title="Research Grants"
-            value="$2.4M"
-            icon={<DollarSign className="h-4 w-4 text-white" />}
-            iconBg="bg-yellow-600"
-          />
-        </motion.div>
-        
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.3, delay: 0.4 }}
-        >
-          <StatCard 
-            title="Awards"
-            value="24"
-            icon={<Award className="h-4 w-4 text-white" />}
-            iconBg="bg-purple-600"
-          />
-        </motion.div>
+        {/* Using the standard div with map approach for stat cards */}
+        {[
+          { title: "Faculty Members", value: "42", icon: <Users className="h-4 w-4 text-white" />, iconBg: "bg-blue-600" },
+          { title: "Publications", value: "156", icon: <FileText className="h-4 w-4 text-white" />, iconBg: "bg-green-600" },
+          { title: "Research Grants", value: "$2.4M", icon: <DollarSign className="h-4 w-4 text-white" />, iconBg: "bg-yellow-600" },
+          { title: "Awards", value: "24", icon: <Award className="h-4 w-4 text-white" />, iconBg: "bg-purple-600" }
+        ].map((card, index) => (
+          <div key={card.title}>
+            <StatCard 
+              title={card.title}
+              value={card.value}
+              icon={card.icon}
+              iconBg={card.iconBg}
+            />
+          </div>
+        ))}
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">

@@ -29,15 +29,15 @@ export const checkAdminStatus = async (email: string) => {
   }
 };
 
-// Helper function to enable realtime for a table
+// Helper function to enable realtime for a table - using type assertions to fix TypeScript errors
 export const enableRealtimeForTable = async (tableName: string) => {
   try {
     console.log(`Attempting to enable realtime for ${tableName} table`);
     
-    // Use a type assertion to bypass TypeScript checking for the RPC call
+    // Use a type assertion with any to bypass TypeScript error
     const { error } = await supabase.rpc('enable_realtime_for_table', {
       table_name: tableName,
-    } as any);
+    } as any); // Using type assertion to fix TypeScript error
     
     if (error) {
       console.error('Error enabling realtime with RPC method:', error);
