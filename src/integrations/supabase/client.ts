@@ -35,9 +35,9 @@ export const enableRealtimeForTable = async (tableName: string) => {
     console.log(`Attempting to enable realtime for ${tableName} table`);
     
     // Use a type assertion with any to bypass TypeScript error
-    const { error } = await supabase.rpc('enable_realtime_for_table', {
+    const { error } = await (supabase.rpc as any)('enable_realtime_for_table', {
       table_name: tableName,
-    } as any); // Using type assertion to fix TypeScript error
+    });
     
     if (error) {
       console.error('Error enabling realtime with RPC method:', error);

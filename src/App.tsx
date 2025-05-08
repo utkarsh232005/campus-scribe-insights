@@ -1,16 +1,14 @@
 
 import React from 'react';
 import {
-  BrowserRouter,
   Routes,
   Route,
   Navigate,
 } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "@/components/ui/sonner"
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
-import Dashboard from './pages/Dashboard';  // Fixed import path
+import Dashboard from './pages/Dashboard';
 import Faculty from './pages/Faculty';
 import Awards from './pages/Awards';
 import Calendar from './pages/Calendar';
@@ -28,8 +26,6 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import Reports from './pages/Reports';
 
-const queryClient = new QueryClient();
-
 // Special component to handle logout
 const LogoutRoute = () => {
   const { signOut } = useAuth();
@@ -41,97 +37,93 @@ const LogoutRoute = () => {
   return <Navigate to="/" replace />;
 };
 
-const AppWithProviders = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <NotificationProvider>
-        <Toaster />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Navigate to="/login" replace />} />
-            <Route path="/landing" element={<LandingPage />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<SignUp />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/logout" element={<LogoutRoute />} />
-            <Route
-              path="/dashboard"
-              element={
-                <PrivateRoute>
-                  <Dashboard />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/faculty"
-              element={
-                <PrivateRoute>
-                  <Faculty />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/reports"
-              element={
-                <PrivateRoute>
-                  <Reports />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/submit-report"
-              element={
-                <PrivateRoute>
-                  <ReportSubmission />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/awards"
-              element={
-                <PrivateRoute>
-                  <Awards />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/calendar"
-              element={
-                <PrivateRoute>
-                  <Calendar />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <PrivateRoute>
-                  <Profile />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <AdminRoute>
-                  <AdminDashboard />
-                </AdminRoute>
-              }
-            />
-            <Route
-              path="/admin/users"
-              element={
-                <AdminRoute>
-                  <UserManagement />
-                </AdminRoute>
-              }
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </NotificationProvider>
-    </AuthProvider>
-  </QueryClientProvider>
+const App = () => (
+  <AuthProvider>
+    <NotificationProvider>
+      <Toaster />
+      <Routes>
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/landing" element={<LandingPage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/logout" element={<LogoutRoute />} />
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute>
+              <Dashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/faculty"
+          element={
+            <PrivateRoute>
+              <Faculty />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/reports"
+          element={
+            <PrivateRoute>
+              <Reports />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/submit-report"
+          element={
+            <PrivateRoute>
+              <ReportSubmission />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/awards"
+          element={
+            <PrivateRoute>
+              <Awards />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/calendar"
+          element={
+            <PrivateRoute>
+              <Calendar />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <PrivateRoute>
+              <Profile />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminDashboard />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <AdminRoute>
+              <UserManagement />
+            </AdminRoute>
+          }
+        />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </NotificationProvider>
+  </AuthProvider>
 );
 
-export default AppWithProviders;
+export default App;
