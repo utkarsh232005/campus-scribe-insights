@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -21,9 +22,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { useNotifications } from '@/context/NotificationContext';
 
 const reportSchema = z.object({
   title: z.string().min(5, { message: "Report title must be at least 5 characters" }),
@@ -40,10 +42,11 @@ type ReportFormValues = z.infer<typeof reportSchema>;
 const ReportForm = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [userDepartment, setUserDepartment] = React.useState<string | null>(null);
-  const [loading, setLoading] = React.useState(false);
+  const [userDepartment, setUserDepartment] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const { addNotification, notifyFacultyAction } = useNotifications();
   
-  React.useEffect(() => {
+  useEffect(() => {
     async function getUserDepartment() {
       try {
         // Get the current user's auth data
@@ -124,15 +127,14 @@ const ReportForm = () => {
       }
       
       // Use the original department value for database storage
-      // This is important for RLS policies and consistency
       console.log("Submitting report with user_id:", user.id, "department:", userDepartment);
       
-      // Insert report with the original department value (not formatted)
+      // Insert report
       const { data: report, error } = await supabase
         .from('reports')
         .insert({
           title: data.title,
-          department: userDepartment, // Use original department value (e.g., "computer_science")
+          department: userDepartment, 
           academic_year: data.academicYear,
           publication_count: parseInt(data.publicationCount),
           conference_count: parseInt(data.conferenceCount),
@@ -141,11 +143,57 @@ const ReportForm = () => {
           achievements: data.achievements,
           user_id: user.id,
           status: 'pending'
-        });
+        })
+        .select();
 
       if (error) {
         console.error("Supabase error details:", error);
         throw new Error(`Failed to submit report: ${error.message}`);
+      }
+
+      console.log("Report submitted successfully:", report);
+      
+      // Format department name for display
+      const dept = userDepartment.split('_').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1)
+      ).join(' ');
+
+      // Create notification directly in the database for immediate effect
+      const { data: notificationData, error: notifError } = await supabase
+        .from('notifications')
+        .insert({
+          message: `New report "${data.title}" submitted from ${dept} department`,
+          type: 'info',
+          created_at: new Date().toISOString()
+          // No user_id makes this a broadcast
+        })
+        .select();
+        
+      if (notifError) {
+        console.error("Error creating direct notification:", notifError);
+      } else {
+        console.log("Direct notification created:", notificationData);
+      }
+      
+      // Also add user-specific notification
+      const { error: userNotifError } = await supabase
+        .from('notifications')
+        .insert({
+          message: `You have submitted report: "${data.title}"`,
+          type: 'info',
+          user_id: user.id,
+          created_at: new Date().toISOString()
+        });
+        
+      if (userNotifError) {
+        console.error("Error creating user notification:", userNotifError);
+      }
+      
+      // Also use the helper functions as a backup approach
+      try {
+        await notifyFacultyAction('submitted', 'report', data.title);
+      } catch (err) {
+        console.error("Error with notification helper:", err);
       }
 
       toast({
@@ -170,12 +218,12 @@ const ReportForm = () => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-white/5 backdrop-blur-lg rounded-lg shadow p-6 border border-gray-800">
       <h2 className="text-xl font-bold mb-6">Annual Report Submission</h2>
       
       {userDepartment && (
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-          <p className="text-sm text-blue-600">
+        <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-md">
+          <p className="text-sm text-blue-400">
             You are submitting this report as a member of the <strong>
               {userDepartment.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
             </strong> department.

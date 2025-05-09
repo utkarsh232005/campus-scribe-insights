@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Bell, Settings } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useNotifications } from '@/context/NotificationContext';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface HeaderProps {
   user: {
@@ -24,9 +25,25 @@ interface HeaderProps {
 }
 
 const Header = ({ user, isAdmin = false }: HeaderProps) => {
-  const { notifications } = useNotifications();
+  const notificationContext = useNotifications();
+  const notifications = notificationContext?.notifications || [];
   const [showNotifications, setShowNotifications] = useState(false);
+  const [hasNewNotifications, setHasNewNotifications] = useState(false);
   const navigate = useNavigate();
+
+  // Effect to check for new notifications
+  useEffect(() => {
+    if (notifications.length > 0) {
+      setHasNewNotifications(true);
+      
+      // Reset the notification indicator after 5 seconds
+      const timer = setTimeout(() => {
+        setHasNewNotifications(false);
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [notifications]);
 
   const handleLogout = () => {
     navigate('/logout');
@@ -39,9 +56,16 @@ const Header = ({ user, isAdmin = false }: HeaderProps) => {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5 text-gray-300" />
-              {notifications.length > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              )}
+              <AnimatePresence>
+                {(notifications.length > 0 || hasNewNotifications) && (
+                  <motion.span 
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.5, opacity: 0 }}
+                    className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"
+                  />
+                )}
+              </AnimatePresence>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-80 bg-gray-800 border-gray-700 text-gray-100" align="end">
@@ -50,16 +74,18 @@ const Header = ({ user, isAdmin = false }: HeaderProps) => {
             {notifications.length === 0 ? (
               <div className="p-4 text-center text-gray-400">No notifications</div>
             ) : (
-              notifications.map((notification) => (
-                <DropdownMenuItem key={notification.id} className="p-4">
-                  <div>
-                    <p>{notification.message}</p>
-                    <p className="text-xs text-gray-400">
-                      {new Date(notification.created_at || '').toLocaleString()}
-                    </p>
-                  </div>
-                </DropdownMenuItem>
-              ))
+              <div className="max-h-[70vh] overflow-y-auto">
+                {notifications.map((notification) => (
+                  <DropdownMenuItem key={notification.id} className="p-4 border-b border-gray-700 last:border-b-0">
+                    <div>
+                      <p>{notification.message}</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {new Date(notification.created_at || '').toLocaleString()}
+                      </p>
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+              </div>
             )}
           </DropdownMenuContent>
         </DropdownMenu>
