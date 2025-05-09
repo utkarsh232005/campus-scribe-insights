@@ -1,11 +1,12 @@
 {
+    "version": 2,
     "builds": [
       {
         "src": "package.json",
         "use": "@vercel/static-build",
         "config": {
-          "installCommand": "npm install",
-          "buildCommand": "npm run build"
+          "distDir": "dist",
+          "installCommand": "npm install --no-optional && npm install @swc/core-linux-x64-gnu"
         }
       }
     ]

@@ -32,12 +32,23 @@ This will:
 1. Update the `.npmrc` file with platform-agnostic settings
 2. Build the project for production
 
+### Deploying to Vercel
+
+The project includes a `vercel.json` configuration file specifically tailored for Vercel deployment:
+
+1. It uses the `@vercel/static-build` builder
+2. It automatically installs the correct Linux-compatible SWC bindings
+3. It skips optional dependencies to avoid platform-specific issues
+
+No additional configuration is needed when deploying to Vercel.
+
 ## Key Changes for Cross-Platform Compatibility
 
 1. Removed platform-specific rollup packages
 2. Added optional dependencies for SWC bindings for both Windows and Linux
 3. Created a platform-agnostic `.npmrc` configuration
 4. Updated the `deploy.js` script to use ES modules and create a cross-platform compatible configuration
+5. Added Vercel-specific deployment configuration
 
 ## Environment Setup
 
