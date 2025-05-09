@@ -1,13 +1,12 @@
 // deploy.js
-const fs = require('fs');
+import { writeFileSync } from 'fs';
 
-// Update .npmrc for deployment
+// Update .npmrc for deployment with platform-agnostic settings
 const npmrcContent = `
-platform=linux
+# Cross-platform configuration
 node-linker=hoisted
-public-hoist-pattern[]=*rollup*
 public-hoist-pattern[]=*swc*
 `;
 
-fs.writeFileSync('.npmrc', npmrcContent);
-console.log('Updated .npmrc for deployment');
+writeFileSync('.npmrc', npmrcContent);
+console.log('Updated .npmrc with platform-agnostic settings');

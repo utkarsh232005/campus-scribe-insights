@@ -1,3 +1,54 @@
+# Campus Scribe Insights
+
+## Cross-Platform Compatibility
+
+This project has been configured to work seamlessly on both Windows and Linux environments. The platform-specific dependencies have been removed, and the configuration has been standardized.
+
+## Development
+
+To start the development server:
+
+```bash
+npm run dev
+```
+
+## Building for Production
+
+To build the project for production:
+
+```bash
+npm run build
+```
+
+## Deployment
+
+To prepare the project for deployment:
+
+```bash
+npm run pre-deploy
+```
+
+This will:
+1. Update the `.npmrc` file with platform-agnostic settings
+2. Build the project for production
+
+## Key Changes for Cross-Platform Compatibility
+
+1. Removed platform-specific rollup packages
+2. Added optional dependencies for SWC bindings for both Windows and Linux
+3. Created a platform-agnostic `.npmrc` configuration
+4. Updated the `deploy.js` script to use ES modules and create a cross-platform compatible configuration
+
+## Environment Setup
+
+The project now uses the following configuration:
+- Node.js with ES modules
+- Vite for building and bundling
+- React with TypeScript
+- SWC for fast compilation
+
+No manual changes are required when switching between development environments or deploying to production servers.
+
 # Welcome to your Lovable project
 
 ## Project info
