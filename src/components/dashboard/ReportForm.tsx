@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -26,6 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '@/context/NotificationContext';
+import ExcelReportHandler from './ExcelReportHandler';
 
 const reportSchema = z.object({
   title: z.string().min(5, { message: "Report title must be at least 5 characters" }),
@@ -110,6 +110,12 @@ const ReportForm = () => {
       achievements: "",
     },
   });
+
+  // Handle data imported from Excel
+  const handleExcelDataImport = (data: ReportFormValues) => {
+    // Set all form values at once with imported data
+    form.reset(data);
+  };
 
   async function onSubmit(data: ReportFormValues) {
     try {
@@ -230,6 +236,8 @@ const ReportForm = () => {
           </p>
         </div>
       )}
+      
+      <ExcelReportHandler onDataImported={handleExcelDataImport} />
       
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
