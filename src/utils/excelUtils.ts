@@ -1,7 +1,7 @@
 
 import * as XLSX from 'xlsx';
 
-interface ReportData {
+export interface ReportData {
   title: string;
   academicYear: string;
   publicationCount: string;
@@ -85,8 +85,10 @@ export const parseExcelFile = (file: File): Promise<ReportData> => {
           achievements: String(dataRow[6] || '')
         };
         
+        console.log("Parsed Excel data:", reportData);
         resolve(reportData);
       } catch (error) {
+        console.error("Excel parsing error:", error);
         reject(error);
       }
     };

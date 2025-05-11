@@ -13,6 +13,7 @@ interface ExcelReportHandlerProps {
 const ExcelReportHandler: React.FC<ExcelReportHandlerProps> = ({ onDataImported }) => {
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleDownloadTemplate = () => {
     try {
@@ -63,7 +64,9 @@ const ExcelReportHandler: React.FC<ExcelReportHandlerProps> = ({ onDataImported 
     
     try {
       setUploading(true);
+      console.log("Processing Excel file:", file.name);
       const data = await parseExcelFile(file);
+      console.log("Excel data imported:", data);
       onDataImported(data);
       
       toast({
@@ -80,7 +83,14 @@ const ExcelReportHandler: React.FC<ExcelReportHandlerProps> = ({ onDataImported 
     } finally {
       setUploading(false);
       // Reset the file input
-      event.target.value = '';
+      if (event.target) event.target.value = '';
+    }
+  };
+
+  // Add a manual upload trigger
+  const triggerFileUpload = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
     }
   };
 
@@ -114,24 +124,24 @@ const ExcelReportHandler: React.FC<ExcelReportHandlerProps> = ({ onDataImported 
           whileHover={{ scale: 1.05 }}
           transition={{ type: "spring", stiffness: 400, damping: 10 }}
         >
-          <div className="relative">
-            <input
-              type="file"
-              id="excel-upload"
-              accept=".xlsx,.xls"
-              onChange={handleFileUpload}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              disabled={uploading}
-            />
-            <Button 
-              variant="default" 
-              className="flex items-center relative"
-              disabled={uploading}
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              {uploading ? 'Importing...' : 'Import from Excel'}
-            </Button>
-          </div>
+          <input
+            type="file"
+            id="excel-upload"
+            ref={fileInputRef}
+            accept=".xlsx,.xls"
+            onChange={handleFileUpload}
+            className="hidden"
+            disabled={uploading}
+          />
+          <Button 
+            variant="default" 
+            className="flex items-center"
+            disabled={uploading}
+            onClick={triggerFileUpload}
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            {uploading ? 'Importing...' : 'Import from Excel'}
+          </Button>
         </motion.div>
       </div>
     </div>
