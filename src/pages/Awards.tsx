@@ -1,14 +1,17 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Award, ArrowRight, Calendar, Plus, Save, X } from 'lucide-react';
+import { Award, ArrowRight, Calendar, Plus, Save, X, Users, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
+import { useToast } from '@/components/ui/use-toast';
+import { cn } from '@/lib/utils';
+import { 
   Dialog,
   DialogContent,
   DialogDescription,
@@ -47,12 +50,32 @@ interface AwardFormData {
   award_type: string;
 }
 
-const DepartmentColors: Record<string, string> = {
-  'computer_science': 'border-l-purple-500 bg-gradient-to-br from-purple-900/10 to-purple-700/5',
-  'mathematics': 'border-l-blue-500 bg-gradient-to-br from-blue-900/10 to-blue-700/5',
-  'physics': 'border-l-green-500 bg-gradient-to-br from-green-900/10 to-green-700/5',
-  'electrical_engineering': 'border-l-red-500 bg-gradient-to-br from-red-900/10 to-red-700/5',
-  'mechanical_engineering': 'border-l-yellow-500 bg-gradient-to-br from-yellow-900/10 to-yellow-700/5'
+const DepartmentStyles: Record<string, { color: string; gradient: string; icon: string }> = {
+  'computer_science': {
+    color: 'text-blue-400',
+    gradient: 'bg-gray-800 border border-blue-500/30 hover:border-blue-400/60',
+    icon: '💻'
+  },
+  'mathematics': {
+    color: 'text-emerald-400',
+    gradient: 'bg-gray-800 border border-emerald-500/30 hover:border-emerald-400/60',
+    icon: '📐'
+  },
+  'physics': {
+    color: 'text-purple-400',
+    gradient: 'bg-gray-800 border border-purple-500/30 hover:border-purple-400/60',
+    icon: '⚛️'
+  },
+  'electrical_engineering': {
+    color: 'text-yellow-400',
+    gradient: 'bg-gray-800 border border-yellow-500/30 hover:border-yellow-400/60',
+    icon: '⚡'
+  },
+  'mechanical_engineering': {
+    color: 'text-red-400',
+    gradient: 'bg-gray-800 border border-red-500/30 hover:border-red-400/60',
+    icon: '⚙️'
+  }
 };
 
 const AwardsPage = () => {
@@ -196,71 +219,142 @@ const AwardsPage = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-8 animate-fade-in">
-          <h1 className="text-4xl font-bold text-white flex items-center">
-            <Award className="h-8 w-8 mr-3 text-yellow-400" />
-            Departmental Awards & Recognitions
-          </h1>
-          
+      <div className="container mx-auto p-6 space-y-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+          <div className="space-y-2">
+            <h1 className="text-4xl font-bold text-white">
+              Faculty Awards
+            </h1>
+            <p className="text-lg text-gray-400 mt-2">
+              Celebrating excellence in academia
+            </p>
+          </div>
           {isAdmin && (
             <Button 
-              className="bg-yellow-600 hover:bg-yellow-700 text-white flex items-center gap-2" 
               onClick={() => setIsDialogOpen(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-5 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-5 w-5 mr-2" />
               Add Award
             </Button>
           )}
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map(i => (
-              <Card key={i} className="bg-gray-800 animate-pulse h-52"></Card>
-            ))}
+          <div className="flex justify-center items-center h-64">
+            <div className="relative w-16 h-16">
+              <div className="absolute inset-0 rounded-full border-4 border-yellow-500/20"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-t-yellow-500 animate-spin"></div>
+            </div>
           </div>
         ) : (
           Object.entries(awardsByDepartment).map(([department, awards]) => (
             <div key={department} className="mb-12 animate-fade-in">
-              <h2 className="text-2xl font-semibold text-white capitalize mb-6 border-l-4 border-yellow-400 pl-3">
+              <h2 className="text-2xl font-semibold text-white capitalize mb-6 border-l-4 border-blue-500 pl-3">
                 {department.replace(/_/g, ' ')} Department 
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="mb-8">
+                <div className="flex items-center gap-2 mb-6">
+                  <Award className="h-5 w-5 text-white" />
+                  <h2 className="text-xl font-semibold text-white">Featured Awards</h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {[
+                    {
+                      title: "Best Research Paper",
+                      department: "Computer Science",
+                      recipient: "Dr. John Doe",
+                      year: 2024,
+                      award_type: "Academic Excellence",
+                      description: "Groundbreaking research in AI and Machine Learning"
+                    },
+                    {
+                      title: "Outstanding Teaching",
+                      department: "Mathematics",
+                      recipient: "Prof. Jane Smith",
+                      year: 2024,
+                      award_type: "Teaching Excellence",
+                      description: "Exceptional dedication to student success"
+                    },
+                    {
+                      title: "Innovation Award",
+                      department: "Engineering",
+                      recipient: "Team Innovate",
+                      year: 2024,
+                      award_type: "Innovation",
+                      description: "Revolutionary sustainable energy solution"
+                    }
+                  ].map((award, index) => (
+                    <Card 
+                      key={index}
+                      className={`overflow-hidden border shadow-lg bg-gray-800/50 backdrop-blur-sm rounded-xl transition-all duration-300 hover:shadow-xl ${DepartmentStyles[department].gradient}`}
+                    >
+                      <CardHeader className="bg-black/20 border-b border-gray-800/50">
+                        <CardTitle className="flex items-center gap-3 text-2xl">
+                          <span className="text-2xl" role="img" aria-label={department}>{DepartmentStyles[department].icon}</span>
+                          <span className={`capitalize font-bold ${DepartmentStyles[department].color}`}>
+                            {department.replace('_', ' ')}
+                          </span>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-6 space-y-6">
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Award className="h-5 w-5 text-white" />
+                            <h3 className="text-lg font-medium text-white">{award.title}</h3>
+                          </div>
+                          <p className="text-sm text-gray-300">{award.recipient}</p>
+                          <p className="text-sm mb-3 line-clamp-2 text-gray-400">
+                            {award.description}
+                          </p>
+                          <Badge variant="secondary" className="bg-gray-700/50 text-gray-300 border-gray-600/50 text-xs">
+                            {award.award_type}
+                          </Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
                 {awards.map((award, index) => (
                   <div
                     key={award.id}
-                    className="transform transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl"
-                    style={{ 
-                      animationDelay: `${index * 100}ms`, 
-                      animation: 'slideIn 0.5s ease forwards',
-                      opacity: 0
-                    }}
+                    className={`p-6 rounded-xl border border-gray-700/50 bg-gray-800/50 backdrop-blur-sm space-y-4 transition-all duration-300 hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/5 opacity-0 animate-in fade-in-0 slide-in-from-bottom-3`}
+                    style={{ animationDelay: `${index * 150}ms` }}
                   >
-                    <Card className={`border-l-4 ${DepartmentColors[department]} overflow-hidden shadow-lg backdrop-blur-sm bg-opacity-20`}>
-                      <CardHeader className="pb-2 space-y-0">
-                        <div className="flex justify-between items-start">
-                          <CardTitle className="text-xl mb-1">{award.title}</CardTitle>
-                          <Badge variant="outline" className="bg-yellow-300/10 text-yellow-300 border-yellow-600/30">
-                            <Calendar className="h-3 w-3 mr-1" /> {award.year}
+                    <ScrollArea className="h-[300px] rounded-xl border border-amber-500/20 bg-gradient-to-b from-gray-900/95 via-gray-900/90 to-gray-800/95 shadow-[0_0_30px_rgba(217,119,6,0.1)] group-hover:shadow-[0_0_40px_rgba(217,119,6,0.15)] backdrop-blur-xl p-6 transition-all duration-500">
+                      <Card className={`overflow-hidden border shadow-lg bg-gray-800/50 backdrop-blur-sm rounded-xl transition-all duration-300 hover:shadow-xl ${DepartmentStyles[department].gradient}`}>
+                        <CardHeader className="bg-black/20 border-b border-gray-800/50">
+                          <CardTitle className="flex items-center gap-3 text-2xl">
+                            <span className="text-2xl" role="img" aria-label={department}>{DepartmentStyles[department].icon}</span>
+                            <span className={`capitalize font-bold ${DepartmentStyles[department].color}`}>
+                              {department.replace('_', ' ')}
+                            </span>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-6 space-y-6">
+                          <div className="space-y-2">
+                            <h3 className="text-lg font-bold text-white">
+                              {award.title}
+                            </h3>
+                            <p className="text-sm text-gray-300">{award.recipient}</p>
+                          </div>
+                          <Badge
+                            className="bg-gray-800 text-gray-300 border border-gray-700"
+                            variant="outline"
+                          >
+                            {award.year}
                           </Badge>
-                        </div>
-                        <p className="text-sm font-medium text-blue-300/80">
-                          Recipient: {award.recipient}
-                        </p>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm mb-2 line-clamp-2 text-gray-300">
-                          {award.description || "No description available."}
-                        </p>
-                      </CardContent>
-                      <CardFooter className="pt-0 flex justify-between items-center">
-                        <Badge variant="secondary" className="bg-transparent border text-xs">
-                          {award.award_type}
-                        </Badge>
-                        <ArrowRight className="h-4 w-4 text-gray-400 opacity-60" />
-                      </CardFooter>
-                    </Card>
+                          <p className="text-sm mb-2 line-clamp-3 text-gray-400 mt-2">
+                            {award.description || "No description available."}
+                          </p>
+                          <Badge variant="secondary" className="bg-gray-700/50 text-gray-300 border-gray-600/50 text-xs">
+                            {award.award_type}
+                          </Badge>
+                        </CardContent>
+                      </Card>
+                    </ScrollArea>
                   </div>
                 ))}
               </div>
@@ -271,160 +365,204 @@ const AwardsPage = () => {
       
       {/* Add Award Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-gray-900 border border-gray-800">
+        <DialogContent className={cn(
+          "relative bg-gray-800 border border-gray-700/50 rounded-xl overflow-hidden",
+          "shadow-xl",
+          "animate-in fade-in slide-in-from-bottom-4 duration-300 ease-out"
+        )}>
+
           <DialogHeader>
-            <DialogTitle className="text-xl text-white flex items-center">
-              <Award className="h-5 w-5 mr-2 text-yellow-400" />
-              Add New Award
+            <DialogTitle className="flex items-center text-2xl font-bold gap-4">
+              <div className={cn(
+                "p-2 rounded-lg bg-blue-500/10 border border-blue-500/20",
+                "transition-all duration-300"
+              )}>
+                <Plus className="w-5 h-5 text-blue-400" />
+              </div>
+              <span className="text-white">
+                Add New Award
+              </span>
             </DialogTitle>
-            <DialogDescription>
-              Enter the details for the new award or recognition.
-            </DialogDescription>
           </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <label htmlFor="title" className="text-sm text-gray-400">Title <span className="text-red-500">*</span></label>
-              <Input
-                id="title"
-                name="title"
-                placeholder="Award Title"
-                value={formData.title}
-                onChange={handleInputChange}
-                className="bg-gray-800 border-gray-700"
-              />
-            </div>
-            
-            <div className="grid gap-2">
-              <label htmlFor="department" className="text-sm text-gray-400">Department <span className="text-red-500">*</span></label>
-              <Select
-                value={formData.department}
-                onValueChange={(value) => handleSelectChange('department', value)}
-              >
-                <SelectTrigger className="bg-gray-800 border-gray-700">
-                  <SelectValue placeholder="Select Department" />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700">
-                  <SelectGroup>
-                    <SelectLabel>Departments</SelectLabel>
-                    {departments.map((dept) => (
-                      <SelectItem key={dept} value={dept} className="cursor-pointer">
-                        {dept.replace(/_/g, ' ')}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="grid gap-2">
-              <label htmlFor="recipient" className="text-sm text-gray-400">Recipient <span className="text-red-500">*</span></label>
-              <Input
-                id="recipient"
-                name="recipient"
-                placeholder="Award Recipient"
-                value={formData.recipient}
-                onChange={handleInputChange}
-                className="bg-gray-800 border-gray-700"
-              />
-            </div>
-            
-            <div className="grid gap-2">
-              <label htmlFor="year" className="text-sm text-gray-400">Year <span className="text-red-500">*</span></label>
-              <Input
-                id="year"
-                name="year"
-                type="number"
-                placeholder="Award Year"
-                value={formData.year}
-                onChange={handleInputChange}
-                className="bg-gray-800 border-gray-700"
-                min={1900}
-                max={2100}
-              />
-            </div>
-            
-            <div className="grid gap-2">
-              <label htmlFor="award_type" className="text-sm text-gray-400">Award Type <span className="text-red-500">*</span></label>
-              <Select
-                value={formData.award_type}
-                onValueChange={(value) => handleSelectChange('award_type', value)}
-              >
-                <SelectTrigger className="bg-gray-800 border-gray-700">
-                  <SelectValue placeholder="Select Award Type" />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700">
-                  <SelectGroup>
-                    <SelectLabel>Type</SelectLabel>
-                    {awardTypes.map((type) => (
-                      <SelectItem key={type} value={type} className="cursor-pointer">
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="grid gap-2">
-              <label htmlFor="description" className="text-sm text-gray-400">Description</label>
-              <Textarea
-                id="description"
-                name="description"
-                placeholder="Award Description"
-                value={formData.description}
-                onChange={handleInputChange}
-                className="bg-gray-800 border-gray-700"
-                rows={3}
-              />
+          <div className="grid gap-6 py-6 px-1">
+            <div className="relative grid gap-4 py-4 z-10">
+              <div className="grid gap-6">
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="grid gap-2"
+                >
+                  <Label htmlFor="title" className="text-white/70 flex items-center gap-2">
+                    <Award className="w-4 h-4 text-purple-400" />
+                    <span>Title</span>
+                  </Label>
+                  <div className="relative group">
+
+                    <Input 
+                      id="title" 
+                      placeholder="Enter award title..." 
+                      className={cn(
+                        "relative bg-gray-700/50 border border-gray-600/50 focus:border-blue-500/50",
+                        "text-white placeholder:text-gray-400",
+                        "transition-all duration-200 px-4 py-3",
+                        "hover:bg-gray-700/70 focus:bg-gray-700/70",
+                        "rounded-lg"
+                      )}
+                      value={formData.title}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: 0.1 }}
+                  className="grid gap-2"
+                >
+                  <Label htmlFor="recipient" className="text-white/70 flex items-center gap-2">
+                    <Users className="w-4 h-4 text-blue-400" />
+                    <span>Recipient</span>
+                  </Label>
+                  <div className="relative group">
+
+                    <Input 
+                      id="recipient" 
+                      placeholder="Enter recipient name..." 
+                      className={cn(
+                        "relative bg-gray-900/90 border-white/10",
+                        "focus-visible:ring-2 focus-visible:ring-blue-500/20 focus-visible:border-blue-500/50",
+                        "text-white/90 placeholder:text-white/30",
+                        "transition-all duration-300 px-4 py-6",
+                        "hover:bg-gray-900/70 focus:bg-gray-900/70"
+                      )}
+                      value={formData.recipient}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: 0.2 }}
+                  className="grid gap-2"
+                >
+                  <Label htmlFor="year" className="text-white/70 flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-emerald-400" />
+                    <span>Year</span>
+                  </Label>
+                  <div className="relative group">
+
+                    <Input 
+                      id="year" 
+                      type="number" 
+                      placeholder="Enter award year..." 
+                      className={cn(
+                        "relative bg-gray-900/90 border-white/10",
+                        "focus-visible:ring-2 focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500/50",
+                        "text-white/90 placeholder:text-white/30",
+                        "transition-all duration-300 px-4 py-6",
+                        "hover:bg-gray-900/70 focus:bg-gray-900/70"
+                      )}
+                      value={formData.year}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: 0.3 }}
+                  className="grid gap-2"
+                >
+                  <Label htmlFor="description" className="text-white/70 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <span>Description</span>
+                  </Label>
+                  <div className="relative group">
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 rounded-xl blur opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition duration-500"></div>
+                    <Textarea 
+                      id="description" 
+                      placeholder="Enter award description..." 
+                      className={cn(
+                        "relative bg-gray-900/90 border-white/10",
+                        "focus-visible:ring-2 focus-visible:ring-gray-500/20 focus-visible:border-gray-500/50",
+                        "text-white/90 placeholder:text-white/30",
+                        "transition-all duration-300 min-h-[120px] resize-none px-4 py-3",
+                        "hover:bg-gray-900/70 focus:bg-gray-900/70"
+                      )}
+                      value={formData.description}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: 0.4 }}
+                  className="grid gap-2"
+                >
+                  <Label htmlFor="type" className="text-white/70 flex items-center gap-2">
+                    <Award className="w-4 h-4 text-pink-400" />
+                    <span>Award Type</span>
+                  </Label>
+                  <div className="relative group">
+                    <div className="absolute -inset-0.5 bg-gray-700/30 rounded-xl blur opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition duration-500"></div>
+                    <Select
+                      value={formData.award_type}
+                      onValueChange={(value) => handleSelectChange('award_type', value)}
+                    >
+                      <SelectTrigger className="relative bg-gray-900/90 border-white/10 focus:ring-2 focus:ring-gray-500/20 focus:border-gray-500/50 text-white/90 transition-all duration-300 px-4 py-6 hover:bg-gray-900/70">
+                        <SelectValue placeholder="Select Award Type" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-900/95 border-gray-700/50 backdrop-blur-xl">
+                        <SelectGroup>
+                          <SelectLabel>Type</SelectLabel>
+                          {awardTypes.map((type) => (
+                            <SelectItem key={type} value={type} className="cursor-pointer">
+                              {type}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </motion.div>
+              </div>
             </div>
           </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={submitting}>
-              <X className="h-4 w-4 mr-2" />
-              Cancel
-            </Button>
-            <Button onClick={handleAddAward} className="bg-yellow-600 hover:bg-yellow-700" disabled={submitting}>
-              {submitting ? (
-                <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2"></div>
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Award
-                </>
+          <DialogFooter className="relative z-10">
+            <Button 
+              type="submit" 
+              className={cn(
+                "relative group overflow-hidden gap-3 px-6 py-6",
+                "bg-gray-800",
+                "border border-gray-700 hover:border-gray-600",
+                "text-white hover:text-white",
+                "shadow-lg",
+                "transition-all duration-300 rounded-xl"
               )}
+              onClick={handleAddAward}
+              disabled={submitting}
+            >
+              <div className="absolute inset-0 bg-gray-700/30 opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
+              <div className="relative flex items-center gap-2">
+                <div className={cn(
+                  "p-2 rounded-lg bg-gray-700 border border-gray-600",
+                  "transition-all duration-300"
+                )}>
+                  <Plus className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-lg font-medium">Save Award</span>
+              </div>
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
-      <style>
-        {`
-        @keyframes slideIn {
-          from {
-            opacity: 0;
-            transform: translateX(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        
-        .animate-fade-in {
-          animation: fadeIn 0.6s ease-in-out;
-        }
-        
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        `}
-      </style>
     </DashboardLayout>
   );
 };

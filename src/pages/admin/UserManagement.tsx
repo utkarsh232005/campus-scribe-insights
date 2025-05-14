@@ -1,394 +1,331 @@
-
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Users,
-  Search,
-  UserCheck,
-  UserX,
-  Info,
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
+import { 
+  Loader2, 
+  Search, 
+  RefreshCw, 
+  Filter, 
+  Users, 
+  CheckCircle2, 
+  XCircle,
+  Clock,
   UserCog,
-  Filter,
-  RefreshCw,
-  Mail,
-  Shield
+  UserPlus
 } from 'lucide-react';
 import { format } from 'date-fns';
 
-interface UserProfile {
+interface SupabaseProfile {
   id: string;
   department: string;
   created_at: string;
-  email?: string;
+  email: string | null;
+  status: 'active' | 'inactive' | null;
   last_sign_in_at?: string;
-  status?: string;
+  isAdmin?: boolean;
+}
+
+interface DatabaseProfile {
+  id: string;
+  department: string;
+  created_at: string;
+  email: string;
+  status: 'active' | 'inactive';
+  last_sign_in_at?: string;
   isAdmin?: boolean;
 }
 
 const UserManagement = () => {
-  const [users, setUsers] = useState<UserProfile[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<UserProfile[]>([]);
+  const [users, setUsers] = useState<DatabaseProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterDepartment, setFilterDepartment] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      setLoading(true);
-      try {
-        console.log("Fetching users data...");
-        
-        // Get profiles from profiles table
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('*')
-          .order('created_at', { ascending: false });
-        
-        if (profilesError) {
-          console.error('Error fetching profiles:', profilesError);
-          throw new Error('Failed to fetch profile data');
-        }
-        
-        console.log("Profiles data:", profilesData);
-        
-        // Get admin users
-        const { data: adminData, error: adminError } = await supabase
-          .from('admin_users')
-          .select('email')
-          .eq('is_active', true);
-        
-        if (adminError) {
-          console.error('Error fetching admin users:', adminError);
-        }
-        
-        console.log("Admin data:", adminData);
-        
-        const adminEmails = adminData ? adminData.map(admin => admin.email.toLowerCase()) : [];
-        
-        // Merge auth and profile data
-        let mergedUsers: UserProfile[] = [];
-        
-        if (profilesData) {
-          // Generate fake emails for testing if needed
-          mergedUsers = profilesData.map(profile => {
-            // Generate email from department
-            const email = `${profile.department}@faculty.edu`;
-            
-            // Check if user is admin
-            const isAdmin = adminEmails.includes(email.toLowerCase());
-            
-            return {
-              id: profile.id,
-              department: profile.department,
-              created_at: profile.created_at,
-              email: email,
-              last_sign_in_at: null,
-              status: 'active',
-              isAdmin: isAdmin
-            };
-          });
-        }
-        
-        console.log("Merged users:", mergedUsers);
-        
-        setUsers(mergedUsers);
-        setFilteredUsers(mergedUsers);
-      } catch (error) {
-        console.error('Error fetching users:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load user data',
-          variant: 'destructive'
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchUsers();
-  }, [toast]);
-
-  // Apply filters and search
-  useEffect(() => {
-    let result = [...users];
-    
-    // Apply department filter
-    if (filterDepartment !== 'all') {
-      result = result.filter(user => user.department === filterDepartment);
-    }
-    
-    // Apply search term
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      result = result.filter(
-        user => 
-          user.email?.toLowerCase().includes(term) ||
-          user.department?.toLowerCase().includes(term) ||
-          user.id?.toLowerCase().includes(term)
-      );
-    }
-    
-    setFilteredUsers(result);
-  }, [searchTerm, filterDepartment, users]);
-
-  const handleUserAction = async (userId: string, action: 'activate' | 'deactivate') => {
+  const fetchUsers = async () => {
+    setLoading(true);
     try {
-      // In a real app, you'd update the user status in your auth system
-      // For demo purposes, we'll just update our local state
-      
-      setUsers(users.map(user => 
-        user.id === userId 
-          ? { ...user, status: action === 'activate' ? 'active' : 'inactive' } 
-          : user
-      ));
-      
-      setFilteredUsers(filteredUsers.map(user => 
-        user.id === userId 
-          ? { ...user, status: action === 'activate' ? 'active' : 'inactive' } 
-          : user
-      ));
-      
-      toast({
-        title: action === 'activate' ? 'User activated' : 'User deactivated',
-        description: `User has been ${action === 'activate' ? 'activated' : 'deactivated'} successfully`,
-      });
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*') as { data: SupabaseProfile[] | null; error: Error | null };
+
+      if (error) throw error;
+
+      if (data) {
+        setUsers(data.map(profile => ({
+          id: profile.id,
+          department: profile.department || 'Unknown',
+          created_at: profile.created_at,
+          email: profile.email || '',
+          status: profile.status || 'active',
+          last_sign_in_at: profile.last_sign_in_at,
+          isAdmin: profile.isAdmin || false
+        })));
+      }
     } catch (error) {
-      console.error(`Error ${action}ing user:`, error);
+      console.error('Error fetching users:', error);
       toast({
-        title: 'Action failed',
-        description: `Failed to ${action} the user`,
+        title: 'Error',
+        description: 'Failed to fetch users',
         variant: 'destructive'
       });
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Get unique departments for filtering
-  const departments = ['all', ...new Set(users.map(user => user.department))];
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const filteredUsers = users.filter(user => 
+    user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.department.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleRefresh = () => {
+    setSearchQuery('');
+    fetchUsers();
+  };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex h-full items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-blue-500"></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
-      <div className="p-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-white animate-fade-in">User Management</h1>
+      <div className="space-y-6 p-6">
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold text-white">
+              User Management
+            </h1>
             <p className="text-gray-400">Manage faculty members and their permissions</p>
           </div>
-          
-          <div className="flex flex-wrap gap-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
-              <Input
-                placeholder="Search users..."
-                className="pl-9 w-full md:w-64 bg-gray-900 border-gray-800"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-2">
-                  <Filter className="h-4 w-4" />
-                  Department: {filterDepartment === 'all' ? 'All' : filterDepartment.replace(/_/g, ' ')}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 bg-gray-900 border-gray-800">
-                {departments.map((dept) => (
-                  <DropdownMenuItem
-                    key={dept}
-                    className={dept === filterDepartment ? "bg-gray-800" : ""}
-                    onClick={() => setFilterDepartment(dept)}
-                  >
-                    {dept === 'all' ? 'All Departments' : dept.replace(/_/g, ' ')}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
+          <div className="flex gap-3">
             <Button 
-              variant="outline" 
-              onClick={() => {
-                setSearchTerm('');
-                setFilterDepartment('all');
-              }}
-            >
+              onClick={handleRefresh}
+              className="bg-gray-800 hover:bg-gray-700 text-white font-medium px-4 py-2 rounded-md transition-all duration-200 border border-gray-700 hover:border-gray-600">
               <RefreshCw className="h-4 w-4 mr-2" />
-              Reset
+              Refresh
+            </Button>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2 rounded-md transition-all duration-200 shadow-md hover:shadow-lg hover:-translate-y-0.5">
+              <UserPlus className="h-4 w-4 mr-2" />
+              Add User
             </Button>
           </div>
         </div>
-        
-        <Card>
+
+        <Card className="bg-gray-900 border border-gray-800 shadow-lg rounded-lg overflow-hidden">
           <CardHeader>
-            <CardTitle className="flex items-center text-xl">
-              <Users className="mr-2 h-5 w-5" />
-              Faculty Users
-              <Badge className="ml-2 bg-blue-600">{filteredUsers.length}</Badge>
+            <CardTitle className="flex items-center text-xl font-bold text-white">
+              <Users className="mr-3 h-6 w-6 text-blue-400" />
+              <span className="text-white font-semibold">
+                Faculty Users
+              </span>
+              <Badge className="ml-3 bg-indigo-600 px-3 py-1 text-white font-medium text-sm rounded-lg border border-indigo-400/20">
+                {filteredUsers.length} Members
+              </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {loading ? (
-              <div className="flex justify-center p-12">
-                <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-blue-600"></div>
+            {/* Search and Filter Section */}
+            <div className="flex flex-col gap-6 mb-8 animate-in slide-in-from-top-4 duration-700">
+              <div className="flex flex-col md:flex-row justify-between items-stretch gap-4">
+                <div className="relative flex-1 max-w-2xl group">
+                  <div className="p-2 rounded-md bg-blue-500/10 border border-blue-500/20 mr-3">
+                    <Users className="h-5 w-5 text-blue-400" />
+                  </div>
+                  Faculty Users
+                  <div className="relative flex items-center bg-gray-800/80 rounded-xl overflow-hidden border border-gray-700/50 backdrop-blur-sm">
+                    <Search className="absolute left-4 h-5 w-5 text-indigo-400/70 group-hover:text-indigo-300 transition-colors duration-300" />
+                    <Input
+                      type="text"
+                      placeholder="Search by name, email, or department..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className={cn(
+                        "w-full pl-12 pr-4 py-6 bg-transparent",
+                        "border-0 focus-visible:ring-2 focus-visible:ring-indigo-500/30",
+                        "text-base text-white/90 placeholder:text-gray-400/50",
+                        "transition-all duration-200 rounded-lg"
+                      )}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-stretch gap-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 border-gray-700 bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white rounded-md"
+                    onClick={handleRefresh}
+                  >
+                    <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                    Reset
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 border-gray-700 bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white rounded-md"
+                    onClick={() => setShowFilters(!showFilters)}
+                  >
+                    <Filter className="h-3.5 w-3.5 mr-1" />
+                    Filter
+                  </Button>
+                </div>
               </div>
-            ) : (
-              <div className="rounded-md border border-gray-800">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>User</TableHead>
-                      <TableHead>Department</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredUsers.length > 0 ? (
-                      filteredUsers.map((user) => (
-                        <TableRow key={user.id} className="animate-slide-in">
-                          <TableCell>
-                            <div className="flex items-center">
-                              <div className="h-9 w-9 rounded-full bg-gray-800 flex items-center justify-center mr-3">
-                                <span className="text-xs font-bold">{user.department?.[0]?.toUpperCase()}</span>
-                              </div>
-                              <div>
-                                <div className="font-medium text-sm">{user.email}</div>
-                                <div className="text-xs text-gray-500 flex items-center">
-                                  <Mail className="h-3 w-3 mr-1" />
-                                  ID: {user.id.substring(0, 8)}...
-                                </div>
-                              </div>
+              {showFilters && (
+                <div className="relative w-full max-w-sm">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+                  <Input
+                    type="search"
+                    placeholder="Search by email or department..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className={cn(
+                      "bg-gray-800 border-gray-700",
+                      "focus:border-blue-500/50 focus:ring-0",
+                      "text-white placeholder:text-gray-500",
+                      "transition-all duration-200 rounded-md pl-9"
+                    )}
+                  />
+                  <Input
+                    type="text"
+                    placeholder="Filter by status..."
+                    className={cn(
+                      "bg-gray-800 border-gray-700",
+                      "focus:border-blue-500/50 focus:ring-0",
+                      "text-white placeholder:text-gray-500",
+                      "transition-all duration-200 rounded-md"
+                    )}
+                  />
+                  <Input
+                    type="date"
+                    placeholder="Filter by date..."
+                    className={cn(
+                      "bg-gray-800/60 border-gray-700",
+                      "focus-visible:ring-2 focus-visible:ring-indigo-500/30 focus-visible:border-indigo-500/50",
+                      "text-white/90 placeholder:text-gray-400/50",
+                      "transition-all duration-200 rounded-lg"
+                    )}
+                  />
+                </div>
+              )}
+            </div>
+
+            <ScrollArea className="rounded-md border border-gray-800 bg-gray-900">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="py-3 text-gray-400 font-medium text-sm">User</TableHead>
+                    <TableHead className="py-3 text-gray-400 font-medium text-sm">Department</TableHead>
+                    <TableHead className="py-3 text-gray-400 font-medium text-sm">Status</TableHead>
+                    <TableHead className="py-3 text-gray-400 font-medium text-sm">Created</TableHead>
+                    <TableHead className="py-3 text-gray-400 font-medium text-sm">Last Login</TableHead>
+                    <TableHead className="py-3 text-gray-400 font-medium text-sm">Role</TableHead>
+                    <TableHead className="py-3 text-gray-400 font-medium text-sm text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredUsers.length > 0 ? (
+                    filteredUsers.map((user, index) => (
+                      <TableRow 
+                        key={user.id} 
+                        className="opacity-0 animate-in fade-in-0 slide-in-from-bottom-3 duration-500 hover:bg-gray-800 transition-all border-b border-gray-800"
+                        style={{ '--delay': `${index * 50}ms` } as React.CSSProperties}
+                      >
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-9 w-9 ring-1 ring-gray-700 bg-blue-600">
+                              <AvatarFallback className="text-sm font-medium text-white bg-blue-600">
+                                {user.department[0]?.toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="font-medium text-sm text-white">{user.email}</div>
+                              <div className="text-xs text-gray-400">{user.id}</div>
                             </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge className="bg-gray-800 text-gray-300 hover:bg-gray-700">
-                              {user.department.replace(/_/g, ' ')}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {user.status === 'active' ? (
-                              <Badge className="bg-green-900/30 text-green-500 border-green-800/30">
-                                <UserCheck className="h-3 w-3 mr-1" />
-                                Active
-                              </Badge>
-                            ) : (
-                              <Badge className="bg-red-900/30 text-red-500 border-red-800/30">
-                                <UserX className="h-3 w-3 mr-1" />
-                                Inactive
-                              </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {user.isAdmin ? (
-                              <Badge className="bg-purple-900/30 text-purple-300 border-purple-800/30">
-                                <Shield className="h-3 w-3 mr-1" />
-                                Admin
-                              </Badge>
-                            ) : (
-                              <Badge className="bg-blue-900/30 text-blue-300 border-blue-800/30">
-                                Faculty
-                              </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {format(new Date(user.created_at), 'MMM d, yyyy')}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <UserCog className="h-4 w-4 mr-1" />
-                                  Actions
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-48 bg-gray-900 border-gray-800">
-                                <DropdownMenuItem 
-                                  className="text-green-500 focus:text-green-500"
-                                  onClick={() => handleUserAction(user.id, 'activate')}
-                                  disabled={user.status === 'active'}
-                                >
-                                  <UserCheck className="h-4 w-4 mr-2" />
-                                  Activate User
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  className="text-red-500 focus:text-red-500"
-                                  onClick={() => handleUserAction(user.id, 'deactivate')}
-                                  disabled={user.status === 'inactive'}
-                                >
-                                  <UserX className="h-4 w-4 mr-2" />
-                                  Deactivate User
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-gray-400">
-                          <Info className="h-5 w-5 mx-auto mb-2" />
-                          No users found matching your criteria
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            className="bg-gray-800 text-blue-300 border border-blue-500/20 px-2 py-0.5 text-xs font-medium"
+                          >
+                            {user.department}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            className={user.status === 'active' 
+                              ? 'bg-green-500/10 text-green-400 border border-green-500/30 px-2 py-0.5 text-xs font-medium'
+                              : 'bg-red-500/10 text-red-400 border border-red-500/30 px-2 py-0.5 text-xs font-medium'
+                            }
+                          >
+                            {user.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-gray-400 text-sm">
+                          {format(new Date(user.created_at), 'MMM d, yyyy')}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-gray-400 text-sm">
+                          {user.last_sign_in_at ? format(new Date(user.last_sign_in_at), 'MMM d, yyyy') : 'Never'}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            className={user.isAdmin 
+                              ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30 px-2 py-0.5 text-xs font-medium'
+                              : 'bg-gray-800 text-gray-400 border border-gray-700 px-2 py-0.5 text-xs font-medium'
+                            }
+                          >
+                            {user.isAdmin ? 'Admin' : 'User'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              className="bg-gray-800 border border-gray-700 hover:bg-gray-700 hover:border-blue-500/30 text-gray-400 hover:text-white transition-all duration-200"
+                            >
+                              <UserCog className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                        No users found matching your criteria
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </ScrollArea>
           </CardContent>
         </Card>
       </div>
-
-      <style>
-        {`
-          @keyframes slideIn {
-            from {
-              opacity: 0;
-              transform: translateY(10px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-          
-          .animate-slide-in {
-            animation: slideIn 0.3s ease forwards;
-          }
-          
-          .animate-fade-in {
-            animation: fadeIn 0.6s ease-in-out;
-          }
-          
-          @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-        `}
-      </style>
     </DashboardLayout>
   );
 };
