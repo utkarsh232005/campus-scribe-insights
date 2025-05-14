@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -26,6 +26,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '@/context/NotificationContext';
+import * as XLSX from 'xlsx';
+import { Download, Upload } from 'lucide-react';
 
 const reportSchema = z.object({
   title: z.string().min(5, { message: "Report title must be at least 5 characters" }),
@@ -44,6 +46,8 @@ const ReportForm = () => {
   const navigate = useNavigate();
   const [userDepartment, setUserDepartment] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { addNotification } = useNotifications();
   
   useEffect(() => {
@@ -221,6 +225,106 @@ const ReportForm = () => {
     }
   }
 
+  // Function to download an Excel template
+  const downloadExcelTemplate = () => {
+    // Create template with sample data
+    const templateData = [
+      {
+        'Report Title': 'Annual Academic Report 2024-25',
+        'Academic Year': '2024-25',
+        'Publications': '5',
+        'Conferences': '2',
+        'Projects': '3',
+        'Funding Amount ($)': '75000',
+        'Achievements & Contributions': 'Sample achievements and contributions text'
+      }
+    ];
+    
+    // Create worksheet and workbook
+    const ws = XLSX.utils.json_to_sheet(templateData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Report Template');
+    
+    // Generate Excel file and trigger download
+    XLSX.writeFile(wb, 'report_template.xlsx');
+    
+    toast({
+      title: "Template Downloaded",
+      description: "Fill out the template and import it to quickly populate the form",
+    });
+  };
+
+  // Function to handle Excel file import
+  const handleImportExcel = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    setImportLoading(true);
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        
+        // Get first worksheet
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        
+        // Convert to JSON
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        
+        if (jsonData.length > 0) {
+          const reportData = jsonData[0] as any;
+          
+          // Update form with data from Excel
+          form.setValue('title', reportData['Report Title'] || '');
+          form.setValue('academicYear', reportData['Academic Year'] || '');
+          form.setValue('publicationCount', reportData['Publications'] || '');
+          form.setValue('conferenceCount', reportData['Conferences'] || '');
+          form.setValue('projectCount', reportData['Projects'] || '');
+          form.setValue('fundingAmount', reportData['Funding Amount ($)'] || '');
+          form.setValue('achievements', reportData['Achievements & Contributions'] || '');
+          
+          toast({
+            title: "Data Imported",
+            description: "Form has been populated with data from Excel file",
+          });
+        }
+      } catch (error) {
+        console.error('Error importing Excel file:', error);
+        toast({
+          title: "Import Failed",
+          description: "There was an error importing the Excel file",
+          variant: "destructive",
+        });
+      } finally {
+        setImportLoading(false);
+        // Reset file input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      }
+    };
+    
+    reader.onerror = () => {
+      setImportLoading(false);
+      toast({
+        title: "Import Failed",
+        description: "There was an error reading the Excel file",
+        variant: "destructive",
+      });
+    };
+    
+    reader.readAsArrayBuffer(file);
+  };
+
+  // Function to trigger file input click
+  const triggerFileUpload = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
   return (
     <div className="relative overflow-hidden bg-gradient-to-b from-slate-900 to-slate-950 backdrop-blur-lg rounded-xl shadow-xl border border-slate-800/60 p-8">
       <div className="absolute inset-0 bg-grid-slate-800/10 [mask-image:linear-gradient(0deg,rgba(0,0,0,0.7),rgba(0,0,0,0.5))]" />
@@ -233,6 +337,63 @@ const ReportForm = () => {
           <p className="text-sm text-slate-400">
             Document your academic contributions and achievements for the reporting period
           </p>
+        </div>
+        
+        {/* Excel Import/Export Section */}
+        <div className="p-4 bg-slate-900/60 border border-slate-800/80 rounded-lg mb-2">
+          <div className="flex flex-col space-y-3">
+            <div className="flex items-center">
+              <svg className="h-5 w-5 text-slate-400 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h3 className="text-base font-medium text-slate-300">Excel Import/Export</h3>
+            </div>
+            
+            <p className="text-sm text-slate-500 pl-7">
+              Download the Excel template to fill out offline, then upload it to quickly populate the form.
+            </p>
+            
+            <div className="flex items-center justify-between mt-2 pl-7 gap-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={downloadExcelTemplate}
+                className="flex-1 bg-slate-800/90 border-slate-700 hover:bg-slate-700 text-slate-300 hover:text-white shadow-md"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download Template
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={triggerFileUpload}
+                disabled={importLoading}
+                className="flex-1 bg-slate-800/90 border-slate-700 hover:bg-slate-700 text-slate-300 hover:text-white shadow-md"
+              >
+                {importLoading ? (
+                  <>
+                    <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                    Importing...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Import from Excel
+                  </>
+                )}
+              </Button>
+              
+              {/* Hidden file input for Excel upload */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImportExcel}
+                accept=".xlsx, .xls"
+                className="hidden"
+              />
+            </div>
+          </div>
         </div>
         
         {userDepartment && (
