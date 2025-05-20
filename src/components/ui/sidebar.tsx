@@ -1,4 +1,3 @@
-
 "use client";
 import { cn } from "@/lib/utils";
 import React, { useState, createContext, useContext } from "react";
@@ -101,7 +100,7 @@ export const DesktopSidebar = ({
     <>
       <motion.div
         className={cn(
-          "h-full px-4 py-4 hidden md:flex md:flex-col bg-gray-900/60 backdrop-blur-lg border-r border-gray-800/40 w-[300px] shrink-0 shadow-lg overflow-hidden",
+          "h-full px-4 py-4 hidden md:flex md:flex-col bg-[#181834]/90 backdrop-blur-lg border-r border-[#232347] w-[300px] shrink-0 shadow-lg overflow-hidden",
           className
         )}
         animate={{
