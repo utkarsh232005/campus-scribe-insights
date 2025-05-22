@@ -157,9 +157,7 @@ const AdminDashboard = () => {
           </Button>
         </div>
         
-        {/* Main Statistics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {/* Total Users Card */}
           <StatisticCard
             title="Total Users"
             value={loading ? '...' : stats.totalUsers}
@@ -172,10 +170,8 @@ const AdminDashboard = () => {
               label: "vs last month"
             }}
             onClick={() => window.location.href = '/admin/users'}
-            className="shadow-lg shadow-blue-500/10"
           />
           
-          {/* Faculty Card */}
           <StatisticCard
             title="Faculty Members"
             value={loading ? '...' : stats.totalFaculty}
@@ -188,10 +184,8 @@ const AdminDashboard = () => {
               label: "vs last month"
             }}
             onClick={() => window.location.href = '/admin/faculty'}
-            className="shadow-lg shadow-purple-500/10"
           />
           
-          {/* Reports Card */}
           <StatisticCard
             title="Total Reports"
             value={loading ? '...' : stats.totalReports}
@@ -200,14 +194,11 @@ const AdminDashboard = () => {
             hover="intense"
             trend={{
               value: stats.pendingReports > 0 ? `${stats.pendingReports} pending` : "All approved",
-              direction: stats.pendingReports > 0 ? "neutral" : "up",
-              label: stats.pendingReports > 0 ? undefined : "status"
+              direction: stats.pendingReports > 0 ? "neutral" : "up"
             }}
             onClick={() => window.location.href = '/admin/reports'}
-            className="shadow-lg shadow-emerald-500/10"
           />
           
-          {/* Awards Card */}
           <StatisticCard
             title="Awards & Honors"
             value={loading ? '...' : stats.totalAwards}
@@ -220,32 +211,7 @@ const AdminDashboard = () => {
               label: "vs last year"
             }}
             onClick={() => window.location.href = '/admin/awards'}
-            className="shadow-lg shadow-amber-500/10"
           />
-        </div>
-        
-        {/* Additional Statistics - Pending Reports */}
-        <div className="mb-8">
-          <h3 className="text-lg font-medium text-zinc-50 mb-4 flex items-center">
-            <Clock className="mr-2 h-5 w-5 text-blue-400" />
-            Pending Approvals
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatisticCard
-              title="Pending Reports"
-              value={loading ? '...' : stats.pendingReports}
-              icon={<FilePen className="h-6 w-6 text-white" />}
-              variant="rose"
-              hover="intense"
-              trend={{
-                value: "Needs Action",
-                direction: "neutral",
-                label: "admin approval"
-              }}
-              onClick={() => window.location.href = '/admin/reports?filter=pending'}
-              className="shadow-lg shadow-rose-500/10 md:col-span-1"
-            />
-          </div>
         </div>
         
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
@@ -74,7 +73,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   }
 
   return (
-    <div className={`flex h-screen bg-gradient-to-b ${isAdminRoute ? 'from-gray-900 to-purple-950/20' : 'from-gray-900 to-gray-950'}`}>
+    <div className="flex h-screen bg-[#0a0a23]">
       <div className="flex flex-col flex-1 overflow-hidden">
         <Header user={user} isAdmin={isAdminRoute} />
         <div className="flex flex-1 overflow-hidden">
