@@ -10,7 +10,7 @@ interface UseNotificationTriggerProps {
 }
 
 export const useNotificationTrigger = ({ tableName, itemType }: UseNotificationTriggerProps) => {
-  const { notifyAdminAction, notifyFacultyAction } = useNotifications();
+  const { addNotification } = useNotifications();
   const { isAdmin, user } = useAuth();
 
   useEffect(() => {
@@ -66,13 +66,11 @@ export const useNotificationTrigger = ({ tableName, itemType }: UseNotificationT
           
           // Trigger appropriate notification based on user role
           try {
-            if (isAdmin) {
-              notifyAdminAction('added', itemType, itemName)
-                .catch(e => console.error("Error sending admin notification:", e));
-            } else {
-              notifyFacultyAction('added', itemType, itemName)
-                .catch(e => console.error("Error sending faculty notification:", e));
-            }
+            addNotification({
+              title: `New ${itemType}`,
+              message: `${itemName} has been added`,
+              type: 'info',
+            });
           } catch (error) {
             console.error("Error sending notification:", error);
           }
@@ -85,7 +83,7 @@ export const useNotificationTrigger = ({ tableName, itemType }: UseNotificationT
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [tableName, itemType, isAdmin, user, notifyAdminAction, notifyFacultyAction]);
+  }, [tableName, itemType, isAdmin, user, addNotification]);
 };
 
 export default useNotificationTrigger;

@@ -43,7 +43,7 @@ const Profile = () => {
                 </motion.div>
                 <div className="space-y-1">
                   <CardTitle className="text-2xl font-bold text-white">
-                    {user?.user_metadata?.full_name || user?.email || 'Guest User'}
+                    {user?.email || 'Guest User'}
                   </CardTitle>
                   <CardDescription className="text-gray-400">
                     Your personal profile and achievements

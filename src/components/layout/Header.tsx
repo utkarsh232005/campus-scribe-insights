@@ -80,7 +80,7 @@ const Header = ({ user, isAdmin = false }: HeaderProps) => {
                     <div>
                       <p>{notification.message}</p>
                       <p className="text-xs text-gray-400 mt-1">
-                        {new Date(notification.created_at || '').toLocaleString()}
+                        {new Date(notification.timestamp).toLocaleString()}
                       </p>
                     </div>
                   </DropdownMenuItem>

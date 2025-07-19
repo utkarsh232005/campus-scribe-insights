@@ -98,14 +98,14 @@ const Reports = () => {
             reportsData.map(async (report) => {
               const { data: userData, error: userError } = await supabase
                 .from('profiles')
-                .select('full_name')
+                .select('department')
                 .eq('id', report.user_id)
                 .single();
               
               // Check for error or missing data before accessing name
               const submitterName = (userError || !userData) 
                 ? 'Unknown' 
-                : userData.full_name || 'Unknown';
+                : userData.department || 'Unknown';
 
               return {
                 ...report,

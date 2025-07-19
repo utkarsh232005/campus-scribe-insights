@@ -366,7 +366,7 @@ const AdminDashboard = () => {
                 <h2 className="text-2xl font-bold text-zinc-100 tracking-tight flex-1">Monthly Overview</h2>
               </div>
               <div className="px-6 pb-6">
-                <ChartCard title={<span className="text-lg font-semibold text-zinc-200">User Growth</span>} subtitle={<span className="text-xs text-zinc-400">Last 12 months</span>} className="bg-gradient-to-br from-zinc-900/80 to-zinc-950/90 border border-zinc-800/60 shadow-lg">
+                <ChartCard title="User Growth" subtitle="Last 12 months" className="bg-gradient-to-br from-zinc-900/80 to-zinc-950/90 border border-zinc-800/60 shadow-lg">
                   <LineChart 
                     data={{
                       labels: stats.monthlyStats.users.map(stat => stat.month),
