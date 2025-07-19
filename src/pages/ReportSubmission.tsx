@@ -1,7 +1,7 @@
 
 import React from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import ReportForm from '@/components/dashboard/ReportForm';
+import ReportSubmissionContainer from '@/components/dashboard/ReportSubmissionContainer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileUp, Clock, FileCheck, AlertCircle, ChevronRight, Home, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -108,7 +108,7 @@ const ReportSubmission = () => {
         ))}
       </div>
       
-      <ReportForm />
+      <ReportSubmissionContainer />
     </DashboardLayout>
   );
 };

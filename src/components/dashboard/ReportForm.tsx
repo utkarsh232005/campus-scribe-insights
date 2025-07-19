@@ -41,7 +41,26 @@ const reportSchema = z.object({
 
 type ReportFormValues = z.infer<typeof reportSchema>;
 
-const ReportForm = () => {
+interface Draft {
+  id: string;
+  title: string;
+  department: string;
+  academic_year: string;
+  publication_count: number;
+  conference_count: number;
+  project_count: number;
+  funding_amount: number;
+  achievements?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface ReportFormProps {
+  editingDraft?: Draft | null;
+  onDraftSaved?: () => void;
+}
+
+const ReportForm = ({ editingDraft, onDraftSaved }: ReportFormProps) => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [userDepartment, setUserDepartment] = useState<string | null>(null);
@@ -105,13 +124,13 @@ const ReportForm = () => {
   const form = useForm<ReportFormValues>({
     resolver: zodResolver(reportSchema),
     defaultValues: {
-      title: "",
-      academicYear: "",
-      publicationCount: "",
-      conferenceCount: "",
-      projectCount: "",
-      fundingAmount: "",
-      achievements: "",
+      title: editingDraft?.title || "",
+      academicYear: editingDraft?.academic_year || "",
+      publicationCount: editingDraft?.publication_count?.toString() || "",
+      conferenceCount: editingDraft?.conference_count?.toString() || "",
+      projectCount: editingDraft?.project_count?.toString() || "",
+      fundingAmount: editingDraft?.funding_amount?.toString() || "",
+      achievements: editingDraft?.achievements || "",
     },
   });
 
@@ -220,6 +239,72 @@ const ReportForm = () => {
         variant: "destructive",
       });
       console.error("Error submitting report:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function saveAsDraft(data: ReportFormValues) {
+    try {
+      setLoading(true);
+      
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("You must be logged in to save a draft");
+      }
+      
+      if (!userDepartment) {
+        throw new Error("Department information is missing. Please contact an administrator.");
+      }
+      
+      // Save to drafts table (update if editing, insert if new)
+      const draftData = {
+        title: data.title,
+        department: userDepartment,
+        academic_year: data.academicYear,
+        publication_count: parseInt(data.publicationCount),
+        conference_count: parseInt(data.conferenceCount),
+        project_count: parseInt(data.projectCount),
+        funding_amount: parseFloat(data.fundingAmount),
+        achievements: data.achievements,
+        user_id: user.id,
+      };
+
+      const { error } = editingDraft
+        ? await supabase
+            .from('report_drafts')
+            .update(draftData)
+            .eq('id', editingDraft.id)
+        : await supabase
+            .from('report_drafts')
+            .insert(draftData);
+
+      if (error) {
+        console.error("Supabase error details:", error);
+        throw new Error(`Failed to save draft: ${error.message}`);
+      }
+
+      toast({
+        title: "Success",
+        description: editingDraft ? "Your draft has been updated" : "Your report has been saved as a draft",
+      });
+
+      // Clear the form after saving draft
+      form.reset();
+      
+      // Call callback if provided
+      if (onDraftSaved) {
+        onDraftSaved();
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+      console.error("Error saving draft:", error);
     } finally {
       setLoading(false);
     }
@@ -657,6 +742,8 @@ const ReportForm = () => {
               <Button 
                 variant="outline" 
                 type="button"
+                onClick={form.handleSubmit(saveAsDraft)}
+                disabled={loading}
                 className="px-5 py-2 h-auto text-sm text-slate-400 border-slate-700 bg-slate-800/50 hover:bg-slate-800 hover:text-slate-200"
               >
                 <svg className="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
